@@ -1,0 +1,1719 @@
+<title>Shadowgate: The Dark Ascent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@1&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--void:#05050E;--panel:#0D0C18;--stone:#1C1A2A;--amber:#E07C0A;--blood:#6B1515;--parch:#CFC4A6;--dim:#7A7060;--border:#3A3048;--mortar:#1E1C2C}
+html,body{width:100%;height:100%;background:var(--void);color:var(--parch);font-family:'Cinzel',serif;overflow:hidden;user-select:none}
+#game{display:grid;grid-template-columns:1fr 210px;grid-template-rows:36px 1fr 145px;width:100%;height:100vh;max-width:1100px;margin:0 auto}
+#titlebar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--border)}
+#game-title{font-family:'Cinzel Decorative',serif;font-size:.95rem;letter-spacing:.12em;color:var(--amber);text-shadow:0 0 18px rgba(224,124,10,.6)}
+#status-bar{display:flex;gap:18px;font-size:.68rem;letter-spacing:.07em}
+.stat{display:flex;align-items:center;gap:5px}.stat-label{color:var(--dim)}.stat-val{color:var(--parch);font-weight:600}
+#view-wrap{position:relative;background:#000;overflow:hidden;border-right:1px solid var(--border)}
+#view{display:block;width:100%;height:100%;cursor:crosshair}
+#room-name{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:.78rem;letter-spacing:.18em;font-weight:600;color:var(--parch);text-shadow:0 0 10px rgba(224,124,10,.5);pointer-events:none;padding:3px 12px;border-bottom:1px solid #4A3A08}
+#ritual-bar{position:absolute;top:0;left:0;right:0;height:3px;background:transparent;display:none}
+#ritual-fill{height:3px;background:var(--blood);transition:width .5s linear}
+#hover-label{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:.68rem;letter-spacing:.1em;color:var(--amber);pointer-events:none;opacity:0;transition:opacity .2s;background:rgba(5,5,14,.8);padding:3px 10px;border:1px solid var(--border)}
+#ctx-menu{position:absolute;z-index:40;background:#08080F;border:1px solid var(--border);padding:4px 0;min-width:150px;box-shadow:0 4px 20px rgba(0,0,0,.9);display:none}
+.ctx-item{padding:7px 16px;font-size:.7rem;letter-spacing:.09em;cursor:pointer;color:var(--parch);display:flex;align-items:center;gap:8px}
+.ctx-item:hover{background:rgba(224,124,10,.12);color:var(--amber)}
+#sidebar{background:var(--panel);display:flex;flex-direction:column;border-left:1px solid var(--border);overflow:hidden}
+#minimap-wrap{padding:8px;border-bottom:1px solid var(--border)}
+#minimap-title{font-size:.58rem;letter-spacing:.15em;color:var(--dim);text-transform:uppercase;margin-bottom:5px}
+#minimap{display:block}
+#inv-header{padding:5px 10px;font-size:.6rem;letter-spacing:.16em;color:var(--dim);border-bottom:1px solid var(--border);text-transform:uppercase;background:var(--stone)}
+#inventory{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:6px;overflow-y:auto;align-content:start}
+.inv-slot{aspect-ratio:1;background:var(--stone);border:1px solid var(--mortar);border-radius:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;transition:border-color .15s}
+.inv-slot:hover,.inv-slot.sel{border-color:var(--amber)}
+.inv-slot.sel{background:#1A1530;box-shadow:0 0 6px rgba(224,124,10,.3) inset}
+.inv-icon{font-size:1.3rem;line-height:1}.inv-label{font-size:.46rem;letter-spacing:.05em;color:var(--dim);text-align:center;line-height:1.2}
+#log-wrap{grid-column:1/-1;background:#060610;border-top:1px solid var(--border);padding:8px 14px;overflow-y:auto;font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;line-height:1.65;color:var(--parch)}
+#log-wrap p{margin:0;padding:1px 0}
+#log-wrap p.sys{color:var(--dim);font-style:normal;font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em}
+#log-wrap p.dead{color:#A02020}
+#log-wrap p.good{color:#C09020}
+#log-wrap p.warn{color:#8B4A10}
+#log-wrap::-webkit-scrollbar{width:3px}
+#log-wrap::-webkit-scrollbar-thumb{background:var(--mortar)}
+#death-screen{position:absolute;inset:0;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:0;pointer-events:none;transition:opacity .8s;z-index:20}
+#death-screen.show{opacity:1;pointer-events:all}
+#death-title{font-family:'Cinzel Decorative',serif;font-size:1.9rem;color:var(--blood);text-shadow:0 0 30px rgba(160,20,20,.9);letter-spacing:.15em}
+#death-msg{font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:var(--dim);max-width:500px;text-align:center;line-height:1.8}
+.restart-btn{padding:7px 24px;background:transparent;border:1px solid var(--blood);color:var(--blood);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.12em;cursor:pointer;transition:all .2s}
+.restart-btn:hover{background:var(--blood);color:#fff}
+#win-screen{position:absolute;inset:0;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;opacity:0;pointer-events:none;transition:opacity 1.2s;z-index:21}
+#win-screen.show{opacity:1;pointer-events:all}
+#win-title{font-family:'Cinzel Decorative',serif;font-size:1.6rem;color:var(--amber);text-shadow:0 0 40px rgba(224,124,10,.9);letter-spacing:.12em}
+#win-msg{font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--parch);max-width:500px;text-align:center;line-height:1.85;white-space:pre-line}
+#ep-banner{position:absolute;inset:0;background:rgba(0,0,0,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:22;opacity:0;pointer-events:none;transition:opacity 1s}
+#ep-banner.show{opacity:1}
+#ep-title{font-family:'Cinzel Decorative',serif;font-size:1.5rem;color:var(--blood);letter-spacing:.15em;text-shadow:0 0 30px rgba(160,20,20,.8)}
+#ep-sub{font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--dim);max-width:420px;text-align:center;line-height:1.8}
+</style>
+
+<div id="game">
+ <div id="titlebar">
+  <div id="game-title">Shadowgate: The Dark Ascent</div>
+  <div id="status-bar">
+   <div class="stat"><span class="stat-label">TORCH</span><span id="torch-icon">🔥</span><span class="stat-val" id="torch-pct">100%</span></div>
+   <div class="stat"><span class="stat-label">SPARE</span><span class="stat-val" id="torch-ct">0</span></div>
+   <div class="stat"><span class="stat-label">TURNS</span><span class="stat-val" id="turn-ct">0</span></div>
+   <div class="stat" id="ep-stat" style="display:none"><span class="stat-label">EP</span><span class="stat-val" id="ep-num">I</span></div>
+  </div>
+ </div>
+ <div id="view-wrap">
+  <canvas id="view"></canvas>
+  <div id="room-name">—</div>
+  <div id="ritual-bar"><div id="ritual-fill" style="width:100%"></div></div>
+  <div id="hover-label"></div>
+  <div id="ctx-menu"></div>
+  <div id="death-screen">
+   <div id="death-title">YOU HAVE DIED</div>
+   <div id="death-msg"></div>
+   <button class="restart-btn" id="restart-btn">TRY AGAIN</button>
+  </div>
+  <div id="win-screen">
+   <div id="win-title">VICTORY</div>
+   <div id="win-msg"></div>
+   <button class="restart-btn" onclick="startGame()">PLAY AGAIN</button>
+  </div>
+  <div id="ep-banner">
+   <div id="ep-title">SHADOWGATE II</div>
+   <div id="ep-sub">The floor gives way. You fall.\n\nBelow Shadowgate, something older has been waiting.\nIt has been waiting a very long time.</div>
+  </div>
+ </div>
+ <div id="sidebar">
+  <div id="minimap-wrap">
+   <div id="minimap-title">Explored</div>
+   <canvas id="minimap" width="194" height="150"></canvas>
+  </div>
+  <div id="inv-header">Inventory</div>
+  <div id="inventory"></div>
+ </div>
+ <div id="log-wrap"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CHIPTUNE
+// ═══════════════════════════════════════════════
+let AC=null;
+function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();return AC;}
+
+const N={
+  A2:110,B2:123.47,C3:130.81,D3:146.83,E3:164.81,F3:174.61,G3:196,A3:220,B3:246.94,
+  C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392,A4:440,Bb3:233.08,Bb4:466.16,R:0
+};
+const Q=420,H=840,W=1680,E=210;
+
+// Approximation of ominous dungeon theme in Am
+const DUNGEON_MEL=[
+  [N.E4,Q],[N.D4,E],[N.C4,E],[N.B3,Q],[N.A3,H],
+  [N.R,E],[N.C4,Q],[N.D4,E],[N.E4,E],[N.F4,Q],[N.E4,H],
+  [N.R,E],[N.G3,Q],[N.A3,E],[N.B3,E],[N.C4,Q],[N.D4,H],
+  [N.R,E],[N.B3,Q],[N.A3,Q],[N.G3,Q],[N.A3,H+Q],
+  [N.R,Q],[N.A3,E],[N.G3,E],[N.F3,E],[N.E3,E],[N.D3,Q],[N.E3,H],
+  [N.F3,Q],[N.G3,E],[N.A3,E],[N.B3,Q],[N.A3,H],
+  [N.G3,Q],[N.F3,Q],[N.E3,Q],[N.A3,W],
+];
+const DUNGEON_BASS=[
+  [N.A2,H],[N.R,Q],[N.E3,Q],[N.A2,H],[N.R,Q],[N.G3,Q],
+  [N.C3,H],[N.R,Q],[N.G3,Q],[N.A2,H],[N.R,Q],[N.A2,Q],
+  [N.F3,H],[N.R,Q],[N.E3,Q],[N.G3,H],[N.R,Q],[N.D3,Q],
+  [N.A2,W+H],
+];
+const BOSS_MEL=[
+  [N.A3,E],[N.R,E],[N.A3,E],[N.Bb3,E],[N.A3,E],[N.G3,Q],
+  [N.F3,E],[N.R,E],[N.F3,E],[N.G3,E],[N.F3,E],[N.E3,Q],
+  [N.D3,E],[N.E3,E],[N.F3,E],[N.G3,E],[N.A3,Q],[N.R,Q],
+  [N.B3,E],[N.A3,E],[N.G3,E],[N.F3,E],[N.E3,H],[N.R,H],
+];
+
+class ChipPlayer{
+  constructor(){this.voices=[];this.playing=false;this.timers=[];}
+  _voice(notes,type,vol,loop){
+    let idx=0;
+    const ac=getAC();
+    const tick=()=>{
+      if(!this.playing)return;
+      const [freq,dur]=notes[idx];
+      if(freq>0){
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.type=type;o.frequency.value=freq;
+        g.gain.setValueAtTime(vol,ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(vol*0.01,ac.currentTime+dur/1000*0.9);
+        o.connect(g);g.connect(ac.destination);
+        o.start();o.stop(ac.currentTime+dur/1000);
+      }
+      idx=(idx+1)%notes.length;
+      if(idx===0&&!loop){this.playing=false;return;}
+      this.timers.push(setTimeout(tick,dur));
+    };
+    tick();
+  }
+  play(track){
+    this.stop();this.playing=true;
+    if(track==='dungeon'){this._voice(DUNGEON_MEL,'square',0.06,true);this._voice(DUNGEON_BASS,'triangle',0.04,true);}
+    else if(track==='boss'){this._voice(BOSS_MEL,'square',0.08,true);}
+  }
+  stop(){this.playing=false;this.timers.forEach(clearTimeout);this.timers=[];}
+}
+const music=new ChipPlayer();
+
+// ═══════════════════════════════════════════════
+// ITEMS
+// ═══════════════════════════════════════════════
+const ITEMS={
+  torch:      {name:'Torch',      icon:'🕯️', desc:'A pitch-soaked torch. Burns.'},
+  lantern:    {name:'Lantern',    icon:'🪔', desc:'Brass lantern. Burns slower than a torch.'},
+  shield:     {name:'Shield',     icon:'🛡️', desc:'Battered iron shield.'},
+  rope:       {name:'Rope',       icon:'🪢', desc:'Hemp rope. Long enough to descend something.'},
+  sword:      {name:'Iron Sword', icon:'⚔️', desc:'A serviceable iron blade.'},
+  hammer:     {name:'Hammer',     icon:'🔨', desc:'Heavy iron hammer.'},
+  skull_key:  {name:'Skull Key',  icon:'🗝️', desc:'Iron key shaped like a skull.'},
+  ancient_key:{name:'Ancient Key',icon:'🔑', desc:'Ornate key, older than the castle.'},
+  spellbook:  {name:'Spellbook',  icon:'📖', desc:'Spells: OPEN, BIND, SUMMON, DESTROY. "Do not combine SUMMON and DESTROY."'},
+  dragons_bane:{name:"Dragon's Bane",icon:'🏹',desc:'Arrow tipped with void-iron.'},
+  crystal_vial:{name:'Crystal Vial',icon:'🧪',desc:'Sealed vial of dark liquid. Moves on its own.'},
+  mirror:     {name:'Mirror',     icon:'🪞', desc:'Silver hand mirror. Reveals things that prefer not to be.'},
+  oracle_stone:{name:"Oracle's Stone",icon:'🔮',desc:'Obsidian stone inscribed with an eye.'},
+  gem:        {name:'Gem of Opening',icon:'💎',desc:'Violet gem that hums. Wants to be somewhere.'},
+  coins:      {name:'Strange Coin',icon:'🪙',desc:'One side: a bridge. The other: void.'},
+  coin2:      {name:'Strange Coin',icon:'🪙',desc:'A second coin. The void side is unsettling.'},
+  coin3:      {name:'Strange Coin',icon:'🪙',desc:'A third coin. That feels like enough for something.'},
+  prayer_book:{name:'Prayer Book', icon:'📕',desc:'The deity is unnamed. The prayers are concerned.'},
+  stone_tablet:{name:'Stone Tablet',icon:'📜',desc:'"The bridge demands three silver pieces — one per life ended in error."'},
+  potion:     {name:'Clarity',    icon:'⚗️',desc:'Labeled: CLARITY. "Drink before the Chamber. —A friend."'},
+  // Episode II
+  rope2:      {name:'Rope',       icon:'🪢',desc:'Coiled rope found in the pit. Still good.'},
+  crystal_shard:{name:'Crystal Shard',icon:'💠',desc:'Sharp as surgical steel. Multi-purpose if you are creative.'},
+  bucket:     {name:'Bucket',     icon:'🪣',desc:'An empty wooden bucket. Has seen better decades.'},
+  bucket_w:   {name:'Water Bucket',icon:'🪣',desc:'Full of cold underground river water. Heavy.'},
+  gear:       {name:'Iron Gear',  icon:'⚙️',desc:'A heavy gear from the Bone Mill. Useful for jamming mechanisms.'},
+  old_key:    {name:'Rusted Key', icon:'🗝️',desc:'Old, corroded, but functional. Opens something in the Menagerie.'},
+  bomb_parts: {name:'Bomb Components',icon:'⚗️',desc:'Sulfur crystals and an iron flask. Combine in an alchemical retort.'},
+  alchemy_bomb:{name:'Alchemy Bomb',icon:'💣',desc:'Unstable. Anchors and destroys anything it contacts. Be specific.'},
+  void_crystal:{name:'Void Crystal',icon:'🔷',desc:'Left by the raven. Solidifies incorporeal entities on contact.'},
+};
+
+// ═══════════════════════════════════════════════
+// ROOM STYLES
+// ═══════════════════════════════════════════════
+const RS={
+  dungeon: {a:[40,28,10],s:[55,50,70],c:.36,d:.62,f:[25,20,12],fog:.4},
+  crypt:   {a:[10,25,40],s:[40,50,65],c:.28,d:.55,f:[12,18,28],fog:.6},
+  chapel:  {a:[60,35,8], s:[70,60,55],c:.32,d:.60,f:[30,22,12],fog:.3},
+  hall:    {a:[45,25,5], s:[60,55,72],c:.24,d:.70,f:[28,20,10],fog:.35},
+  armory:  {a:[30,20,8], s:[55,52,58],c:.30,d:.58,f:[22,18,10],fog:.4},
+  dragon:  {a:[80,30,5], s:[70,40,30],c:.35,d:.65,f:[40,15,5], fog:.5},
+  bridge:  {a:[20,15,35],s:[50,45,65],c:.40,d:.80,f:[0,0,5],   fog:.7},
+  magic:   {a:[40,10,60],s:[50,30,80],c:.30,d:.65,f:[20,5,35], fog:.55},
+  void_r:  {a:[5,5,20],  s:[25,20,45],c:.20,d:.85,f:[0,0,12],  fog:.8},
+  tower:   {a:[25,12,50],s:[45,35,70],c:.45,d:.70,f:[12,5,28], fog:.6},
+  cave:    {a:[20,18,8], s:[52,48,42],c:.38,d:.60,f:[18,15,8], fog:.45},
+  crystal: {a:[15,30,50],s:[60,80,100],c:.30,d:.58,f:[10,20,35],fog:.5},
+  flooded: {a:[10,20,30],s:[45,55,60],c:.32,d:.65,f:[5,15,25], fog:.6},
+  spider:  {a:[15,20,10],s:[40,45,35],c:.35,d:.60,f:[10,12,5], fog:.5},
+  lab:     {a:[30,35,15],s:[50,55,40],c:.28,d:.58,f:[20,22,10],fog:.35},
+  void_d:  {a:[3,3,15],  s:[18,15,35],c:.18,d:.88,f:[0,0,8],   fog:.85},
+};
+
+// ═══════════════════════════════════════════════
+// EPISODE 1 ROOMS
+// ═══════════════════════════════════════════════
+const ROOMS_1={
+  gatehouse:{name:'The Gatehouse',style:'dungeon',
+    desc:"You stand before the Gates of Shadowgate. Cold wind howls through iron bars. Two torches bracket the entrance. Your own torch flickers. Everyone who was warned about this place ignored the warning. You are here anyway.",
+    exits:{n:'entry_hall'},
+    hs:{
+      gate:    {label:'Iron Gate',   x:.5, y:.42,look:"The gate bears a crest: two serpents devouring a star. It is open. That's not reassuring."},
+      crow:    {label:'Crow',        x:.72,y:.28,icon:'🐦‍⬛',look:"The crow watches with professional interest. It does not speak. Crows can't speak. You are aware. You are very stressed."},
+      torches: {label:'Wall Torches',x:.32,y:.36,icon:'🕯️',look:"Iron brackets hold two fresh torches. Someone left them recently.",take:'torch',multi:2},
+      lantern: {label:'Lantern',     x:.64,y:.52,icon:'🪔',look:"A brass lantern on the gatehouse shelf. Still has oil.",take:'lantern'},
+    }},
+  entry_hall:{name:'Entry Hall',style:'hall',
+    desc:"The Entry Hall is vast and cold. Empty suits of armor stand at attention. Passages lead in four directions. Something watches you. You decide it is the architecture.",
+    exits:{n:'great_hall',e:'chapel',w:'armory',s:'gatehouse'},
+    hs:{
+      armor:   {label:'Suit of Armor',x:.3, y:.4, look:"Full plate, empty. You check twice. Its helmet is slightly tilted. You are imagining this."},
+      tapestry:{label:'Tapestry',    x:.68,y:.38,look:"A tapestry depicts a knight slaying a dragon. The dragon looks smug. Art historians have debated this for centuries."},
+      shield_h:{label:'Iron Shield', x:.42,y:.55,icon:'🛡️',look:"A battered iron shield leaning against the wall. Still serviceable.",take:'shield'},
+      rope_h:  {label:'Rope',        x:.58,y:.58,icon:'🪢',look:"Coiled rope on the floor.",take:'rope'},
+    }},
+  chapel:{name:'The Chapel',style:'chapel',
+    desc:"The chapel smells of cold wax and old prayer. Three candlesticks on the altar, unlit. An inscription reads: 'First the failing, then the faithful, then the heart.'",
+    exits:{w:'entry_hall'},locked:{e:{msg:"A heavy iron door east. Skull-shaped lock."}},
+    candle_seq:['cl','cr','cc'],candle_prog:0,
+    hs:{
+      cl:      {label:'Left Candle',  x:.32,y:.42,look:"The leftmost. 'The failing.'"},
+      cr:      {label:'Right Candle', x:.5, y:.42,look:"The center. 'The faithful.'"},
+      cc:      {label:'Center Candle',x:.68,y:.42,look:"The rightmost. 'The heart.'"},
+      altar:   {label:'Altar',        x:.5, y:.5, look:"Stone altar. Three candlesticks. An inscription: 'Light the path: First the failing, then the faithful, then the heart.' Below: a sealed compartment."},
+      prayer_h:{label:'Prayer Book',  x:.38,y:.62,icon:'📕',look:"A devotional text on a pew. Extremely concerned prayers.",take:'prayer_book'},
+      coin_h:  {label:'Strange Coin', x:.64,y:.64,icon:'🪙',look:"A strange coin on the offering plate.",take:'coins'},
+    }},
+  crypt:{name:'The Crypt',style:'crypt',
+    desc:"Stone sarcophagi line the walls. Six of them. The sixth reads: HERE LIES HE WHO OPENED THE WRONG ONE. You appreciate the candor.",
+    exits:{w:'chapel'},
+    hs:{
+      s1:{label:'Sarcophagus I',  x:.18,y:.46,look:"'Ser Aldric Graves. He tried.' Poignant."},
+      s2:{label:'Sarcophagus II', x:.32,y:.46,look:"'Lady Mourne. She was very thorough.' The lid is cracked from the inside.",danger:true},
+      s3:{label:'Sarcophagus III',x:.46,y:.46,look:"'The Unknown Adventurer. Unknown for several reasons.'"},
+      s4:{label:'Sarcophagus IV', x:.6, y:.46,icon:'🔑',look:"'Kelwick of Hammerfall.' A small key lies beside it.",take:'ancient_key'},
+      s5:{label:'Sarcophagus V',  x:.74,y:.46,look:"'Brother Orin. He prayed first. It didn't help.'"},
+      sb:{label:'Wrong Sarcophagus',x:.1,y:.5, look:"'HERE LIES HE WHO OPENED THE WRONG ONE.' Something shifts inside.",danger:true},
+      hatch:{label:'Stone Hatch', x:.5, y:.68,look:"A hatch in the floor. Skull-shaped lock. Below: darkness and a rope's worth of drop."},
+    }},
+  armory:{name:'The Armory',style:'armory',
+    desc:"Weapon racks line the walls. Most are empty. A dead forge sits cold in the corner. Someone scratched 'NICE TRY' above it.",
+    exits:{e:'entry_hall'},
+    hs:{
+      forge:   {label:'Forge',      x:.35,y:.48,look:"Cold and dead for years. Scratch marks: 'NICE TRY.'"},
+      sword_h: {label:'Iron Sword', x:.55,y:.44,icon:'⚔️',look:"A serviceable iron blade. Well-maintained.",take:'sword'},
+      hammer_h:{label:'Hammer',     x:.65,y:.52,icon:'🔨',look:"Heavy iron hammer.",take:'hammer'},
+    }},
+  great_hall:{name:'The Great Hall',style:'hall',
+    desc:"A vast dining hall. The table is set for a feast that never happened. A rat sits at the head of the table. It seems to be waiting.",
+    exits:{n:'serpent_hall',e:'throne_room',s:'entry_hall'},
+    locked:{e:{key:'ancient_key',msg:"Heavy door east, secured with an ancient lock."}},
+    hs:{
+      table:   {label:'Feast Table',x:.5, y:.46,look:"Petrified food. Cobwebbed cutlery. The rat makes eye contact. You look away first."},
+      rat:     {label:'Rat',        x:.5, y:.42,icon:'🐀',look:"The rat stares. You stare. The rat has superior composure."},
+      coin_h2: {label:'Strange Coin',x:.62,y:.5,icon:'🪙',look:"A strange coin placed deliberately on the table.",take:'coin2'},
+    }},
+  throne_room:{name:'The Throne Room',style:'dungeon',
+    desc:"The throne is carved from obsidian. The velvet cushion is now mostly skeleton. A crystal vial on the armrest. A locked iron chest on the floor.",
+    exits:{w:'great_hall'},
+    hs:{
+      throne: {label:'Obsidian Throne',x:.5, y:.44,look:"Radiates cold. The skeleton wore armor once. It stayed."},
+      vial_h: {label:'Crystal Vial',  x:.42,y:.5, icon:'🧪',look:"The liquid inside moves on its own.",take:'crystal_vial'},
+      chest:  {label:'Iron Chest',    x:.6, y:.58,look:"Locked iron chest. Old keyhole — same design as a key you may have."},
+      banner: {label:'Black Banner',  x:.28,y:.35,look:"Silver serpent eating itself. The Warlock Lord's crest. The serpent looks smug."},
+    }},
+  bone_passage:{name:'The Bone Passage',style:'crypt',
+    desc:"The walls are not stone. They are bones — pressed and mortared. Thousands of them. You count to ten and stop yourself.",
+    exits:{u:'crypt',n:'oracle_chamber'},
+    hs:{
+      bones: {label:'The Walls',  x:.5,y:.45,look:"Mostly human. Some not. Carefully arranged. Someone took time with this."},
+      skulls:{label:'Skull Niche',x:.3,y:.38,look:"Three skulls in a row. They look like they're laughing. They look like that because of how skulls are."},
+    }},
+  oracle_chamber:{name:"Oracle's Chamber",style:'magic',
+    desc:"A circular chamber. A still pool reflects no light. A figure in grey robes sits beyond the pool. She is not surprised to see you.",
+    exits:{s:'bone_passage'},locked:{n:{msg:"The Oracle watches. She seems to be waiting for something intelligent."}},
+    hs:{
+      oracle:{label:'The Oracle', x:.5,y:.38,look:"She says: 'A riddle. I have cities, but no houses. I have forests, but no trees. I have water, but no fish. What am I?'"},
+      pool:  {label:'Still Pool', x:.5,y:.58,look:"The pool reflects nothing. Something looks back. You stand up quickly."},
+      stone_h:{label:"Oracle's Stone",x:.35,y:.6,icon:'🔮',look:"A smooth obsidian stone inscribed with an eye.",take:'oracle_stone'},
+    }},
+  serpent_hall:{name:'The Serpent Hall',style:'dungeon',
+    desc:"Columns carved as coiled serpents. Their shadows writhe. It is a shadow effect. You are certain. A leather spellbook lies on a lectern.",
+    exits:{s:'great_hall',e:'dragons_pass',n:'library',w:'oracle_chamber'},
+    hs:{
+      columns:    {label:'Serpent Columns',x:.35,y:.42,look:"Stone. The hissing is wind. You place your hand on one. Cold. Stone. You move."},
+      spellbook_h:{label:'Spellbook',      x:.55,y:.5, icon:'📖',look:"Spells: OPEN, BIND, SUMMON, DESTROY. Margin note: 'SUMMON: do not. DESTROY: requires anchor. SUMMON+DESTROY: we cannot stress this enough.'",take:'spellbook'},
+    }},
+  library:{name:'The Library',style:'dungeon',
+    desc:"Towering shelves, floor to ceiling. Most books are decayed. A silver mirror hangs east. A stone tablet on the reading table. A ladder moved to the section marked 'HIDDEN.'",
+    exits:{s:'serpent_hall'},
+    locked:{e:{msg:"The east wall looks solid. The silver mirror reflects something differently."}},
+    hs:{
+      mirror_h:    {label:'Silver Mirror',x:.72,y:.42,icon:'🪞',look:"Your reflection looks worried. Staring at the wall behind your reflection: a door.",take:'mirror'},
+      stone_tablet_h:{label:'Stone Tablet',x:.45,y:.55,icon:'📜',look:"'The bridge demands three silver pieces — one per life ended in error.'",take:'stone_tablet'},
+      ladder:      {label:'Library Ladder',x:.28,y:.4, look:"Positioned at the section labeled 'HIDDEN.' The section has no books. Just a note: 'You're warm.'"},
+    }},
+  hidden_archives:{name:'Hidden Archives',style:'crypt',
+    desc:"A secret room. One candle somehow still burning. Classified documents on shelves. A locked box on the table.",
+    exits:{w:'library'},
+    hs:{
+      shelves: {label:'Classified Shelves',x:.45,y:.42,look:"Three documents: 1) An inventory of cursed objects. 2) A diary ending in fire damage. 3) 'If you're reading this, the door closes in 60 seconds.' It does not close. You don't find it funny."},
+      coin_h3: {label:'Coin on Table',     x:.35,y:.55,icon:'🪙',look:"A third strange coin. Placed deliberately.",take:'coin3'},
+      gem_h:   {label:'Gem of Opening',    x:.6, y:.52,icon:'💎',look:"A deep violet gem on velvet. It hums. It wants to be somewhere specific.",take:'gem'},
+      candle2: {label:'Lone Candle',       x:.5, y:.38,look:"Burning for centuries. The wax has not dripped. The flame does not flicker. You leave it alone."},
+    }},
+  dragons_pass:{name:"Dragon's Pass",style:'dragon',
+    desc:"The corridor is scorched black. Still warm. Something large passed through here recently. The air smells of sulfur. You hear breathing.",
+    exits:{w:'serpent_hall',e:'dragons_lair'},
+    hs:{
+      scorch:{label:'Scorchmarks',x:.5,y:.45,look:"Warm under your hand. The footprints ahead are human-sized. The ones behind them are significantly not."},
+      sound: {label:'Something',  x:.7,y:.4, look:"Deep. Rhythmic. Very large. From the east. You are going east."},
+    }},
+  dragons_lair:{name:"Dragon's Lair",style:'dragon',
+    desc:"A vast cavern. The ceiling lost in sulfurous haze. Something enormous lies coiled around a cairn of bones. One eye opens. Amber. Old fire.",
+    exits:{w:'dragons_pass'},locked:{n:{msg:"The dragon blocks the north passage. It is alive and looking at you."}},
+    hs:{
+      dragon:   {label:'The Dragon',   x:.55,y:.42,look:"Ancient. Enormous. Watching you with the patient disdain of something that has outlived civilizations. Not particularly threatened. Not yet."},
+      cairn:    {label:'Bone Cairn',   x:.3, y:.55,look:"Hundreds of years of failed attempts. You are not going to be on this pile."},
+    }},
+  bridge:{name:'Bridge of Skulls',style:'bridge',
+    desc:"A narrow stone bridge over infinite void. The void breathes. At the midpoint: a troll. Enormous. Patient. Apparently employed.",
+    exits:{s:'dragons_lair'},locked:{n:{msg:"The troll blocks the north end. He will not move without payment."}},
+    hs:{
+      troll:{label:'The Troll',x:.5,y:.38,look:"Made of grey stone-skin and professional stubbornness. 'Three. Silver. Pieces.' Not negotiating. He has been here since the bridge was built."},
+      void: {label:'The Void', x:.5,y:.65,look:"You look over the edge. The void looks back. It has been waiting for you specifically. You step back."},
+    }},
+  sanctum_approach:{name:'Sanctum Approach',style:'magic',
+    desc:"A long corridor of glowing runes. They pulse with anticipatory energy. A heavy door north.",
+    exits:{s:'bridge',n:'sanctum'},
+    hs:{
+      runes:   {label:'Glowing Runes',x:.5,y:.52,look:"Translation: 'Beyond this point, the Warlock Lord hears all.' Secondary rune: 'Also: no refunds.' A third rune depicts a small stick figure falling through a floor."},
+      potion_h:{label:'Vial on Floor',x:.36,y:.62,icon:'⚗️',look:"A small vial. Labeled: 'CLARITY. Drink before the Chamber. —A friend.'",take:'potion'},
+    }},
+  sanctum:{name:'The Inner Sanctum',style:'magic',
+    desc:"Magic barriers arc blue-white across the floor. The safe path is invisible. A door north has a violet gem-shaped socket.",
+    exits:{s:'sanctum_approach'},
+    locked:{n:{key:'gem',msg:"The north door has a violet gem-shaped socket."}},
+    hs:{
+      barrier:{label:'Magic Barrier',x:.5,y:.48,look:"Blue-white arcs of energy. They disintegrate things. Thoroughly."},
+      door_n: {label:'North Door',   x:.5,y:.35,look:"A heavy door with a violet gem socket. The socket pulses expectantly."},
+    }},
+  warlock_tower:{name:'Warlock Tower',style:'tower',
+    desc:"Spiral stairs ascend through crackling blue lightning. Metal spires conduct the energy. The climb is dangerous.",
+    exits:{s:'sanctum',u:'warlock_chamber'},
+    hs:{
+      stairs:   {label:'Spiral Stairs', x:.5,y:.4, look:"The stairs wind upward. You count the steps. You lose count. You decide not to count."},
+      lightning:{label:'Blue Lightning',x:.65,y:.35,look:"Arcs between spires in patterns that almost look like text. Almost. It says 'LEAVE.' Probably coincidence."},
+    }},
+  warlock_chamber:{name:"Warlock Lord's Chamber",style:'void_r',
+    desc:"TALIMAR THE WARLOCK LORD conducts an enormous ritual — a shimmering tear in reality growing behind him. He expected you. He smiles.",
+    exits:{},ritual_timer:55,
+    hs:{
+      talimar:{label:'Talimar',   x:.5,y:.38,look:"'You actually made it. I'm mildly impressed. It changes nothing.' He resumes the ritual. You have the Spellbook. BIND him. Then DESTROY with the Crystal Vial."},
+      rift:   {label:'The Rift', x:.5,y:.28,look:"The tear grows. You can see something on the other side. You look away."},
+      altar_w:{label:'Dark Altar',x:.35,y:.55,look:"Where the ritual is anchored. If something were bound here, then destroyed with the right anchor..."},
+    }},
+};
+
+// ═══════════════════════════════════════════════
+// EPISODE 2 ROOMS
+// ═══════════════════════════════════════════════
+const ROOMS_2={
+  the_pit:{name:'The Pit',style:'cave',
+    desc:"You land in a pile of something soft you choose not to examine. Darkness. But there — a torch bracket on the wall, still lit. And coiled rope beneath it. You are alive. This is temporary.",
+    exits:{n:'crystal_cavern'},
+    hs:{
+      pit_walls:{label:'Stone Walls', x:.5,y:.42,look:"Natural rock. You fell a long way. The hole above you is already gone — the earth closed. You are not going back the way you came."},
+      torch_w:  {label:'Wall Torch',  x:.28,y:.35,icon:'🕯️',look:"A wall-mounted torch, still burning. Somehow.",take:'torch'},
+      rope2_h:  {label:'Coiled Rope', x:.42,y:.58,icon:'🪢',look:"Good hemp rope, coiled on a peg.",take:'rope2'},
+    }},
+  crystal_cavern:{name:'Crystal Cavern',style:'crystal',
+    desc:"A cavern of beauty and considerable personal danger. Crystal formations the size of trees. The floor is covered in shards — they glint like fractured stars. Moving carelessly will be educational. And brief.",
+    exits:{s:'the_pit',n:'bone_mill',e:'underground_river'},
+    hs:{
+      formations:{label:'Crystal Formations',x:.4,y:.38,look:"Breathtaking. Thousands of years of mineral patience. Each one sharp enough to cause serious philosophical reconsideration."},
+      floor_shards:{label:'Crystal Floor',   x:.5,y:.65,look:"The shards are exquisitely sharp. You should look before stepping forward."},
+      shard_h:   {label:'Crystal Shard',     x:.62,y:.52,icon:'💠',look:"A fist-sized piece, broken clean. One edge is surgical. Multi-purpose if you're creative.",take:'crystal_shard'},
+    }},
+  underground_river:{name:'The Underground River',style:'flooded',
+    desc:"Fast-moving black water. An underground river carving its way through the rock. The bank you're standing on is narrow. On the far bank: a bucket. The rope you have will reach a stalactite overhead. You could swing across.",
+    exits:{w:'crystal_cavern'},
+    hs:{
+      river:    {label:'The River',  x:.5,y:.58,look:"Cold. Fast. Deep. Whatever is in it is in it permanently. Do not join it."},
+      stalactite:{label:'Stalactite',x:.48,y:.22,look:"A thick stalactite above the river. Something could be tied to it. Something long."},
+      bucket_h: {label:'Bucket (far shore)',x:.75,y:.6,icon:'🪣',look:"A wooden bucket on the far bank. You need to cross first."},
+    }},
+  bone_mill:{name:'The Bone Mill',style:'cave',
+    desc:"An ancient mechanical grinder, still running. Bones everywhere. Someone built this to process bones for some ritual. A gear mechanism keeps it turning. A locked cabinet stands in the corner.",
+    exits:{s:'crystal_cavern',n:'flooded_passage'},
+    hs:{
+      mechanism:{label:'Mill Mechanism',x:.4,y:.44,look:"The central gear assembly. If something were jammed into it, it would stop. The mechanism would reveal the cabinet behind it."},
+      gear_h:   {label:'Iron Gear',    x:.3,y:.58,icon:'⚙️',look:"A spare gear, perhaps replacement stock. Heavy.",take:'gear'},
+      old_key_h:{label:'Rusted Key',   x:.62,y:.62,icon:'🗝️',look:"An old key on a hook by the cabinet. Corroded but functional.",take:'old_key'},
+      cabinet:  {label:'Locked Cabinet',x:.68,y:.46,look:"A heavy cabinet secured with an old lock. The key nearby would open it."},
+    }},
+  flooded_passage:{name:'Flooded Passage',style:'flooded',
+    desc:"Knee-deep standing water. The passage north is blocked by collapsed burning debris — an old brazier still somehow on fire, mixed with fallen stone. The fire is between you and north.",
+    exits:{s:'bone_mill'},locked:{n:{msg:"The burning debris blocks the north passage. Water would put it out. The stone debris after that needs something sharp."}},
+    hs:{
+      water_floor:{label:'Standing Water',x:.5,y:.7,look:"Ankle-deep, maybe knee-deep further in. Cold. The passage smells of mold and old smoke."},
+      fire_debris:{label:'Burning Debris',x:.5,y:.4,look:"Fire and fallen stone, blocking north. The fire needs to go out first. Then the stone debris needs to be cleared."},
+    }},
+  spider_chamber:{name:"Spider's Web Chamber",style:'spider',
+    desc:"The chamber is half-web. Thick, grey, ancient silk spanning floor to ceiling. Something large built this. Something large is still in it. You can hear it moving.",
+    exits:{s:'flooded_passage',e:'alchemy_lab'},
+    hs:{
+      web:    {label:'The Web',    x:.5,y:.42,look:"Thick and highly flammable. If you had a lit torch, the web would burn. The spider would not appreciate this."},
+      spider: {label:'The Spider', x:.68,y:.35,look:"Enormous. Old. Currently focused on something in the web. It becomes aware of you as you look at it. It has many eyes. They all find you."},
+      cocoon: {label:'Wrapped Bundle',x:.32,y:.48,look:"Something wrapped in silk. An old adventurer's pack, maybe. You're not getting close enough to check right now."},
+    }},
+  alchemy_lab:{name:'Alchemy Lab',style:'lab',
+    desc:"An underground wizard's workshop. Shelves of labeled components. A large alchemical retort on the central bench. Most components are degraded — but not all.",
+    exits:{w:'spider_chamber',n:'menagerie'},
+    hs:{
+      retort:  {label:'Alchemical Retort',x:.5,y:.48,look:"A brass distillation apparatus. Still functional. If you had the right components, this could produce something quite unstable."},
+      shelves: {label:'Component Shelves',x:.28,y:.42,look:"Most labels are in a script you don't read. A few you recognize: 'Flash Powder,' 'Stabilized Void Tar,' 'Reason Not To,' 'Do Not Combine With Hope.' The last shelf is empty."},
+      notes:   {label:'Research Notes',  x:.7,y:.54,look:"A journal, open to a page: 'The Void-Born may be made material through crystallized void energy — what the miners call void crystal. Once material: standard binding holds. Once bound: the bomb.'"},
+    }},
+  menagerie:{name:'The Menagerie',style:'cave',
+    desc:"Three cages. A raven, jet black, watching you without moving. A snake, scaled and still, with patient gold eyes. A third cage, enormous and empty — whatever was in it left a long time ago.",
+    exits:{s:'alchemy_lab',n:'void_antechamber'},
+    hs:{
+      raven_cage:{label:'Raven Cage', x:.3,y:.42,look:"The raven watches. One cage, one lock. You have a key that might fit. The raven would go somewhere. Ravens remember."},
+      snake_cage:{label:'Snake Cage', x:.55,y:.42,look:"The snake is patient. The lock is an old mechanism — something sharp could pick it. The snake is thin enough to access tunnels you cannot."},
+      empty_cage:{label:'Empty Cage', x:.78,y:.4, look:"The bars are bent outward. Whatever left did so with purpose and some force. The size of the cage is not comforting."},
+    }},
+  void_antechamber:{name:'Void Antechamber',style:'void_d',
+    desc:"Reality is thin here. You can see through the walls into other dimensions — colors that don't exist in three-dimensional space. On the floor: something left by the raven. A crystal, deep blue, humming.",
+    exits:{s:'menagerie',n:'void_sanctum'},
+    hs:{
+      rift_wall:   {label:'The Rift Wall',x:.5,y:.4, look:"Through the wall: dimensions you don't have words for. Something moves there. It is aware of you. It has been aware for some time."},
+      void_crystal_h:{label:'Void Crystal',x:.5,y:.62,icon:'🔷',look:"The raven left this. It pulses cold blue. Makes incorporeal things solid on contact.",take:'void_crystal'},
+    }},
+  void_sanctum:{name:"Malachar's Sanctum",style:'void_d',
+    desc:"MALACHAR THE VOID-BORN drifts at the chamber's center, half in this dimension, half in something else. He is aware of you. He is not entirely here. Your sword would pass through him. He knows this. He is smiling.",
+    exits:{},ritual_timer:60,
+    hs:{
+      malachar:{label:'Malachar',  x:.5,y:.38,look:"'You killed Talimar. I felt it. Good — he was becoming sentimental. You are here because you followed a raven. The raven serves no one. Interesting.' He floats. He is not solid. Yet."},
+      dark_gate:{label:'Dark Gate',x:.5,y:.25,look:"A gate into the void itself. Malachar is using it to remain half-incorporeal. Close it and he becomes fully material. The void crystal would collapse it."},
+    }},
+};
+
+// Room positions for minimap (episode 1: col×row in a 7×10 grid of 20px cells)
+const MAP_POS={
+  gatehouse:[3,9],entry_hall:[3,8],armory:[2,8],chapel:[4,8],crypt:[5,8],
+  great_hall:[3,7],throne_room:[4,7],bone_passage:[5,7],
+  serpent_hall:[3,6],oracle_chamber:[5,6],dragons_pass:[4,6],dragons_lair:[5,5],
+  library:[3,5],hidden_archives:[4,5],
+  bridge:[5,4],sanctum_approach:[5,3],sanctum:[5,2],warlock_tower:[5,1],warlock_chamber:[5,0],
+  // Episode 2 (offset col by +1, distinct area)
+  the_pit:[1,9],crystal_cavern:[1,8],underground_river:[0,8],bone_mill:[1,7],
+  flooded_passage:[1,6],spider_chamber:[1,5],alchemy_lab:[2,5],
+  menagerie:[2,4],void_antechamber:[2,3],void_sanctum:[2,2],
+};
+const MAP_LINKS=[
+  ['gatehouse','entry_hall'],['entry_hall','armory'],['entry_hall','chapel'],['entry_hall','great_hall'],
+  ['chapel','crypt'],['crypt','bone_passage'],['bone_passage','oracle_chamber'],['oracle_chamber','serpent_hall'],
+  ['great_hall','throne_room'],['great_hall','serpent_hall'],['serpent_hall','library'],['serpent_hall','dragons_pass'],
+  ['library','hidden_archives'],['dragons_pass','dragons_lair'],['dragons_lair','bridge'],
+  ['bridge','sanctum_approach'],['sanctum_approach','sanctum'],['sanctum','warlock_tower'],['warlock_tower','warlock_chamber'],
+  ['the_pit','crystal_cavern'],['crystal_cavern','underground_river'],['crystal_cavern','bone_mill'],
+  ['bone_mill','flooded_passage'],['flooded_passage','spider_chamber'],['spider_chamber','alchemy_lab'],
+  ['alchemy_lab','menagerie'],['menagerie','void_antechamber'],['void_antechamber','void_sanctum'],
+];
+
+const DEATHS=[
+  "The castle digests you slowly. Your remains are categorized and filed.",
+  "A skeleton nearby picks up your torch and uses it to read. It is reading a love story.",
+  "The Warlock Lord barely noticed. He was filing paperwork.",
+  "You have become a cautionary tale. The castle has many.",
+  "Your inventory is redistributed among the local wildlife.",
+  "The rat in the Great Hall looks unsurprised.",
+  "This has happened before. The castle keeps records.",
+  "Somewhere, a new suit of armor appears in the Entry Hall. It fits.",
+  "The Spellbook's warning was, in retrospect, quite clear.",
+  "History repeats itself in Castle Shadowgate with unusual efficiency.",
+];
+const DEATHS2=[
+  "The Underdark notes your contribution with the indifference of geology.",
+  "The spider cocoons you efficiently. You appreciate the professionalism.",
+  "The crystal shards are exquisitely sharp. The surgeon who finds you (no one finds you) would be impressed.",
+  "You read the wrong research notes. The result disagrees with you specifically.",
+  "Malachar reaches into your dimension with fingers that shouldn't exist in three-dimensional space. You learn, briefly, that there are more.",
+  "The Alchemy Bomb goes off in your hands. Malachar's exact last words are 'oh, interesting.' Then he is alone.",
+  "You throw the bucket. It clangs off a crystal formation. The spider hears this.",
+  "The void takes you. It was patient. It had time.",
+];
+
+// ═══════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════
+let G={};
+function ROOMS(){return G.ep===2?ROOMS_2:ROOMS_1;}
+
+function newGame(){
+  G={
+    room:'gatehouse',ep:1,inv:[],sel:null,
+    torch:100,extraTorch:0,hasLantern:false,
+    turns:0,dead:false,won:false,
+    taken:new Set(),visited:new Set(),
+    // EP1 puzzle flags
+    chapelProg:0,chapelDone:false,cryptOpen:false,
+    oracleSolved:false,dragonDead:false,bridgePaid:false,
+    mirrorUsed:false,chestOpen:false,talimarBound:false,
+    ritualTimer:0,ritualActive:false,
+    // EP2 puzzle flags
+    millJammed:false,cabinetOpen:false,
+    fireOut:false,webBurned:false,spiderDead:false,
+    ravenFreed:false,snakeFreed:false,
+    malachBound:false,malachMaterial:false,
+    // misc
+    floatAnim:0,
+  };
+  document.getElementById('death-screen').classList.remove('show');
+  document.getElementById('win-screen').classList.remove('show');
+  document.getElementById('ep-banner').classList.remove('show');
+  document.getElementById('ep-stat').style.display='none';
+  stoneCache={};
+  music.stop();
+  music.play('dungeon');
+  enterRoom('gatehouse');
+}
+
+// ═══════════════════════════════════════════════
+// CANVAS + RENDERER
+// ═══════════════════════════════════════════════
+const cv=document.getElementById('view');
+const cx=cv.getContext('2d');
+let W=0,H=0,VP,FW;
+let tf=1,tfT=1,animF=0,lastT=0;
+let particles=[];
+let stoneCache={};
+let hovered=null; // {type:'hs'|'exit', key, dir}
+
+function resize(){
+  const wrap=document.getElementById('view-wrap');
+  W=cv.width=wrap.clientWidth;
+  H=cv.height=wrap.clientHeight;
+  VP={x:W/2,y:H*.42};
+  FW={l:W*.3,r:W*.7,t:VP.y-H*.26,b:VP.y+H*.27};
+  stoneCache={};
+}
+window.addEventListener('resize',resize);
+
+function lerp(a,b,t){return a+(b-a)*t;}
+
+function stonePat(rgb){
+  const k=rgb.join(',');
+  if(stoneCache[k])return stoneCache[k];
+  const oc=document.createElement('canvas');
+  oc.width=128;oc.height=64;
+  const c=oc.getContext('2d');
+  const bw=40,bh=18;
+  for(let row=0;row<5;row++){
+    const off=(row%2)*(bw/2);
+    for(let col=-1;col<4;col++){
+      const v=.75+Math.random()*.25;
+      c.fillStyle=`rgb(${rgb[0]*v|0},${rgb[1]*v|0},${rgb[2]*v|0})`;
+      c.fillRect(col*bw-off+1,row*bh+1,bw-2,bh-2);
+    }
+  }
+  c.fillStyle='rgba(0,0,0,.45)';
+  for(let row=0;row<=5;row++){
+    c.fillRect(0,row*bh,128,1);
+    const off=(row%2)*(bw/2);
+    for(let col=-1;col<4;col++)c.fillRect(col*bw-off,row*bh,1,bh);
+  }
+  const p=cx.createPattern(oc,'repeat');
+  stoneCache[k]=p;
+  return p;
+}
+
+function drawEnv(roomId){
+  if(!W)return;
+  const room=ROOMS()[roomId];
+  if(!room)return;
+  const st=RS[room.style]||RS.dungeon;
+  const dep=st.d,ch=st.c;
+  const ai=[Math.min(255,st.a[0]*tf),Math.min(255,st.a[1]*tf*.9),Math.min(255,st.a[2]*tf*.7)];
+
+  const fw={
+    l:lerp(0,W*.3,dep),r:lerp(W,W*.7,dep),
+    t:lerp(0,VP.y-H*.26+H*ch*.3,dep),b:lerp(H,VP.y+H*.27,dep)
+  };
+  Object.assign(FW,fw);
+
+  cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+
+  // ceiling
+  const cg=cx.createLinearGradient(0,0,0,fw.t);
+  cg.addColorStop(0,`rgb(${ai[0]*.2|0},${ai[1]*.2|0},${ai[2]*.3|0})`);
+  cg.addColorStop(1,`rgb(${ai[0]*.6|0},${ai[1]*.55|0},${ai[2]*.7|0})`);
+  cx.fillStyle=cg;
+  cx.beginPath();cx.moveTo(0,0);cx.lineTo(W,0);cx.lineTo(fw.r,fw.t);cx.lineTo(fw.l,fw.t);cx.closePath();cx.fill();
+
+  // ceiling beams
+  cx.strokeStyle='rgba(0,0,0,.28)';cx.lineWidth=5;
+  for(let i=0;i<3;i++){const bx=W*(.25+i*.25);cx.beginPath();cx.moveTo(bx,0);cx.lineTo(lerp(bx,VP.x,dep*.6),fw.t);cx.stroke();}
+
+  // floor
+  const s=st.f;
+  const fg=cx.createLinearGradient(0,fw.b,0,H);
+  fg.addColorStop(0,`rgb(${s[0]+ai[0]*.4|0},${s[1]+ai[1]*.3|0},${s[2]+ai[2]*.2|0})`);
+  fg.addColorStop(1,`rgb(${s[0]*.4|0},${s[1]*.4|0},${s[2]*.4|0})`);
+  cx.fillStyle=fg;
+  cx.beginPath();cx.moveTo(0,H);cx.lineTo(W,H);cx.lineTo(fw.r,fw.b);cx.lineTo(fw.l,fw.b);cx.closePath();cx.fill();
+
+  // floor lines
+  cx.strokeStyle='rgba(0,0,0,.22)';cx.lineWidth=1;
+  for(let i=1;i<8;i++){const ty=fw.b+(H-fw.b)*i/8;cx.beginPath();cx.moveTo(lerp(0,fw.l,i/8),ty);cx.lineTo(lerp(W,fw.r,i/8),ty);cx.stroke();}
+
+  // side walls
+  const pat=stonePat(st.s);
+  ['l','r'].forEach(side=>{
+    cx.save();cx.beginPath();
+    if(side==='l'){cx.moveTo(0,0);cx.lineTo(fw.l,fw.t);cx.lineTo(fw.l,fw.b);cx.lineTo(0,H);}
+    else{cx.moveTo(W,0);cx.lineTo(fw.r,fw.t);cx.lineTo(fw.r,fw.b);cx.lineTo(W,H);}
+    cx.closePath();cx.clip();
+    cx.fillStyle=pat;cx.globalAlpha=.7;cx.fillRect(0,0,W,H);
+    const sg=cx.createLinearGradient(side==='l'?0:W,0,side==='l'?fw.l:fw.r,0);
+    sg.addColorStop(0,'rgba(0,0,0,.65)');sg.addColorStop(1,'rgba(0,0,0,0)');
+    cx.globalAlpha=1;cx.fillStyle=sg;cx.fillRect(0,0,W,H);
+    cx.restore();
+  });
+
+  // far wall
+  cx.save();cx.beginPath();cx.rect(fw.l,fw.t,fw.r-fw.l,fw.b-fw.t);cx.clip();
+  cx.fillStyle=pat;cx.globalAlpha=.9;cx.fillRect(fw.l,fw.t,fw.r-fw.l,fw.b-fw.t);
+  cx.globalAlpha=1;
+  const fc=cx.createRadialGradient(VP.x,VP.y,0,VP.x,VP.y,(fw.r-fw.l)*.8);
+  fc.addColorStop(0,`rgba(${ai[0]},${ai[1]},${ai[2]},.2)`);fc.addColorStop(1,'rgba(0,0,0,.5)');
+  cx.fillStyle=fc;cx.fillRect(fw.l,fw.t,fw.r-fw.l,fw.b-fw.t);
+  cx.restore();
+
+  drawExits(room,fw);
+  drawRoomDetails(room,fw,st,tf);
+
+  // torch light
+  const tx=VP.x+Math.sin(animF*.04)*8,ty=fw.t-H*.08;
+  const tg=cx.createRadialGradient(tx,ty,0,VP.x,VP.y,W*.75*tf);
+  tg.addColorStop(0,`rgba(255,180,60,${.2*tf})`);
+  tg.addColorStop(.3,`rgba(220,100,20,${.1*tf})`);
+  tg.addColorStop(1,`rgba(0,0,0,${.55*(1.5-tf)})`);
+  cx.fillStyle=tg;cx.fillRect(0,0,W,H);
+
+  // fog
+  const fogA=(st.fog||.4)*(1-tf*.3);
+  if(fogA>0){const fg2=cx.createRadialGradient(VP.x,VP.y,0,VP.x,VP.y,Math.min(W,H)*.65);fg2.addColorStop(0,'rgba(0,0,0,0)');fg2.addColorStop(1,`rgba(0,0,0,${fogA})`);cx.fillStyle=fg2;cx.fillRect(0,0,W,H);}
+
+  // vignette
+  const vg=cx.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,Math.max(W,H)*.75);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.68)');
+  cx.fillStyle=vg;cx.fillRect(0,0,W,H);
+
+  // very low torch: heavy red vignette
+  if(G.torch<20){
+    const rv=cx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.7);
+    rv.addColorStop(0,'rgba(0,0,0,0)');rv.addColorStop(1,`rgba(80,0,0,${(20-G.torch)/20*.6})`);
+    cx.fillStyle=rv;cx.fillRect(0,0,W,H);
+  }
+
+  // torch bracket
+  const flSz=(10+Math.sin(animF*.1)*3)*tf;
+  cx.save();cx.globalAlpha=.85;
+  const fl=cx.createRadialGradient(tx,ty,0,tx,ty,flSz*1.5);
+  fl.addColorStop(0,'rgba(255,248,200,.95)');fl.addColorStop(.3,'rgba(255,160,40,.8)');fl.addColorStop(1,'rgba(180,20,0,0)');
+  cx.fillStyle=fl;cx.beginPath();cx.arc(tx,ty,flSz*1.5,0,Math.PI*2);cx.fill();
+  cx.restore();
+
+  drawParticles(tx,ty);
+}
+
+function drawExits(room,fw){
+  const ex=room.exits||{};
+  const archW=(fw.r-fw.l)*.38,archH=(fw.b-fw.t)*.75;
+  const ax=VP.x-archW/2,ay=fw.t;
+
+  // North/Up
+  if(ex.n||ex.u){
+    const dir=ex.n?'n':'u';
+    const lk=room.locked&&room.locked[dir]&&!checkKey(dir);
+    const hovN=hovered&&hovered.type==='exit'&&(hovered.dir==='n'||hovered.dir==='u');
+    cx.save();cx.beginPath();cx.rect(ax,ay,archW,archH);cx.clip();
+    const dg=cx.createLinearGradient(0,ay,0,ay+archH);
+    if(lk){dg.addColorStop(0,'rgba(30,5,5,.95)');dg.addColorStop(1,'rgba(20,3,3,1)');}
+    else{dg.addColorStop(0,'rgba(0,0,20,.97)');dg.addColorStop(1,'rgba(0,0,5,1)');}
+    cx.fillStyle=dg;cx.fillRect(ax,ay,archW,archH);
+    if(hovN&&!lk){cx.strokeStyle='rgba(224,124,10,.5)';cx.lineWidth=2;cx.strokeRect(ax,ay,archW,archH);}
+    cx.restore();
+    cx.fillStyle=hovN?'rgba(224,124,10,.5)':'rgba(207,196,166,.2)';
+    cx.font='9px Cinzel,serif';cx.textAlign='center';
+    cx.fillText(ex.u?'▲ UP':'▲ N',ax+archW/2,ay+archH-8);
+  }
+  // West
+  if(ex.w||ex.d){
+    const hovW=hovered&&hovered.type==='exit'&&(hovered.dir==='w'||hovered.dir==='d');
+    const eg=cx.createLinearGradient(0,0,fw.l,0);
+    eg.addColorStop(0,'rgba(0,0,0,.97)');eg.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=eg;cx.fillRect(0,H*.2,fw.l,H*.6);
+    cx.fillStyle=hovW?'rgba(224,124,10,.5)':'rgba(207,196,166,.18)';
+    cx.font='8px Cinzel,serif';cx.textAlign='left';
+    cx.fillText(ex.d?'▼ DOWN':'◄ W',8,H*.5+4);
+  }
+  // East
+  if(ex.e){
+    const hovE=hovered&&hovered.type==='exit'&&hovered.dir==='e';
+    const eg2=cx.createLinearGradient(W,0,fw.r,0);
+    eg2.addColorStop(0,'rgba(0,0,0,.97)');eg2.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=eg2;cx.fillRect(fw.r,H*.2,W-fw.r,H*.6);
+    cx.fillStyle=hovE?'rgba(224,124,10,.5)':'rgba(207,196,166,.18)';
+    cx.font='8px Cinzel,serif';cx.textAlign='right';
+    cx.fillText('E ►',W-8,H*.5+4);
+  }
+  // South
+  if(ex.s){
+    const hovS=hovered&&hovered.type==='exit'&&hovered.dir==='s';
+    cx.fillStyle=hovS?'rgba(224,124,10,.4)':'rgba(207,196,166,.12)';
+    cx.font='8px Cinzel,serif';cx.textAlign='center';
+    cx.fillText('▼ S',W/2,H-8);
+  }
+}
+
+function drawRoomDetails(room,fw,st,tf){
+  const style=room.style;
+  cx.save();
+
+  if(style==='chapel'){
+    const prog=G.chapelProg;
+    const bx=VP.x,by=fw.b-(fw.b-fw.t)*.28;
+    [-55,0,55].forEach((ox,i)=>{
+      const cx2=bx+ox,cy=by-28;
+      cx.fillStyle='#C8C0A0';cx.fillRect(cx2-3,cy,6,22);
+      if(i<prog){
+        const f=.7+Math.sin(animF*.1+i)*.3;
+        const fg=cx.createRadialGradient(cx2,cy,0,cx2,cy,12*f);
+        fg.addColorStop(0,'rgba(255,240,120,.95)');fg.addColorStop(.5,'rgba(255,120,20,.6)');fg.addColorStop(1,'rgba(200,60,0,0)');
+        cx.fillStyle=fg;cx.beginPath();cx.arc(cx2,cy,12*f,0,Math.PI*2);cx.fill();
+      }
+    });
+    cx.fillStyle='rgba(40,25,10,.65)';
+    const pw=(fw.r-fw.l-40)*.45;
+    cx.fillRect(fw.l+20,fw.b-18,pw,13);cx.fillRect(fw.l+20+pw+10,fw.b-18,pw,13);
+  }
+
+  if(style==='dragon'){
+    const dg=cx.createLinearGradient(0,H*.75,0,H);
+    dg.addColorStop(0,'rgba(180,60,5,0)');dg.addColorStop(1,`rgba(180,60,5,${.35*tf})`);
+    cx.fillStyle=dg;cx.fillRect(0,H*.75,W,H*.25);
+
+    if(G.room==='dragons_lair'&&!G.dragonDead){
+      // Lava particles from floor
+      if(Math.random()<.3)particles.push({x:fw.l+Math.random()*(fw.r-fw.l),y:fw.b,vx:(Math.random()-.5)*.6,vy:-(1+Math.random()*2),life:1,decay:.025,size:2+Math.random()*2,col:'lava'});
+      cx.fillStyle='rgba(18,8,3,.88)';
+      cx.beginPath();cx.ellipse(fw.r-(fw.r-fw.l)*.35,fw.b-18,82,33,.2,0,Math.PI*2);cx.fill();
+      cx.beginPath();cx.ellipse(fw.r-(fw.r-fw.l)*.15,fw.t+(fw.b-fw.t)*.35,30,20,-.3,0,Math.PI*2);cx.fill();
+      // Spine ridges
+      cx.strokeStyle='rgba(30,12,5,.9)';cx.lineWidth=3;
+      for(let i=0;i<5;i++){
+        const sx=fw.r-(fw.r-fw.l)*(.45+i*.04);
+        cx.beginPath();cx.moveTo(sx,fw.b-35-i*4);cx.lineTo(sx+5,fw.b-48-i*6);cx.stroke();
+      }
+      // Eye
+      const ex2=fw.r-(fw.r-fw.l)*.1,ey=fw.t+(fw.b-fw.t)*.32;
+      const eg=cx.createRadialGradient(ex2,ey,0,ex2,ey,10);
+      eg.addColorStop(0,'rgba(255,140,0,.9)');eg.addColorStop(1,'rgba(200,50,0,0)');
+      cx.fillStyle=eg;cx.beginPath();cx.arc(ex2,ey,10,0,Math.PI*2);cx.fill();
+      // Wings
+      cx.fillStyle='rgba(12,5,2,.72)';
+      cx.beginPath();
+      cx.moveTo(fw.r-(fw.r-fw.l)*.35,fw.t+(fw.b-fw.t)*.32);
+      cx.lineTo(fw.r-(fw.r-fw.l)*.58,fw.t+(fw.b-fw.t)*.04);
+      cx.lineTo(fw.r-(fw.r-fw.l)*.22,fw.t+(fw.b-fw.t)*.42);
+      cx.fill();
+    }
+  }
+
+  if(style==='bridge'){
+    // falling void particles
+    if(Math.random()<.15)particles.push({x:fw.l+Math.random()*(fw.r-fw.l)*1.4,y:fw.t,vx:(Math.random()-.5)*.3,vy:1+Math.random()*2,life:1,decay:.008,size:.8+Math.random(),col:'void'});
+    // infinite void sides
+    [['left',0,fw.l*.9],[' right',fw.r*1.1,W]].forEach(([,x1,x2])=>{
+      const vg2=cx.createLinearGradient(x1===0?W*.15:x1,0,x1===0?0:W,0);
+      vg2.addColorStop(0,'rgba(0,0,15,.97)');vg2.addColorStop(1,'rgba(0,0,10,0)');
+      cx.fillStyle=vg2;cx.fillRect(Math.min(x1,x2),fw.t,Math.abs(x2-x1),fw.b-fw.t);
+    });
+    // Troll
+    if(!G.bridgePaid){
+      const tx2=VP.x,ty2=VP.y;
+      cx.fillStyle='rgba(50,45,58,.92)';
+      cx.beginPath();cx.ellipse(tx2,ty2-26,19,21,0,0,Math.PI*2);cx.fill();
+      cx.fillRect(tx2-23,ty2-5,46,42);cx.fillRect(tx2-42,ty2,22,32);cx.fillRect(tx2+20,ty2,22,32);
+    }
+  }
+
+  if(style==='magic'||style==='void_r'||style==='void_d'){
+    const t=animF*.05;
+    // Energy arcs
+    cx.strokeStyle=`rgba(${style==='void_d'?'80,30,180':'100,60,220'},${.4*tf})`;
+    cx.lineWidth=1;
+    for(let i=0;i<4;i++){
+      cx.beginPath();cx.moveTo(fw.l,fw.t+i*(fw.b-fw.t)/4);
+      cx.quadraticCurveTo(VP.x+Math.sin(t+i)*45,VP.y+Math.cos(t*.7+i)*35,fw.r,fw.t+i*(fw.b-fw.t)/4);
+      cx.stroke();
+    }
+
+    if(G.room==='warlock_chamber'&&!G.won){
+      const wx=VP.x,wy=VP.y-22;
+      cx.fillStyle='rgba(4,0,18,.95)';
+      cx.beginPath();cx.ellipse(wx,wy-30,14,17,0,0,Math.PI*2);cx.fill();
+      cx.fillRect(wx-19,wy-13,38,46);
+      cx.beginPath();cx.moveTo(wx-19,wy+33);cx.lineTo(wx-30,wy+58);cx.lineTo(wx-6,wy+33);cx.fill();
+      cx.beginPath();cx.moveTo(wx+19,wy+33);cx.lineTo(wx+30,wy+58);cx.lineTo(wx+6,wy+33);cx.fill();
+      // rotating runes
+      cx.save();cx.translate(wx,wy);cx.rotate(t*.3);
+      cx.strokeStyle=`rgba(160,80,255,${.3*tf})`;cx.lineWidth=1;
+      cx.beginPath();cx.arc(0,0,55,0,Math.PI*2);cx.stroke();
+      for(let i=0;i<8;i++){
+        const a=i*Math.PI/4;
+        cx.fillStyle=`rgba(160,80,255,${.5*tf})`;
+        cx.font='10px serif';cx.textAlign='center';cx.fillText('✦',Math.cos(a)*55,Math.sin(a)*55+4);
+      }
+      cx.restore();
+      // eye glow
+      const p2=.6+Math.sin(animF*.06)*.4;
+      const eg2=cx.createRadialGradient(wx,wy-32,0,wx,wy-32,14);
+      eg2.addColorStop(0,`rgba(160,80,255,${p2})`);eg2.addColorStop(1,'rgba(80,20,180,0)');
+      cx.fillStyle=eg2;cx.beginPath();cx.arc(wx,wy-32,14,0,Math.PI*2);cx.fill();
+      // rift: animated tear
+      const rp=.5+Math.sin(animF*.04)*.5;
+      const rx=VP.x,ry=fw.t+(fw.b-fw.t)*.18;
+      cx.save();
+      cx.shadowBlur=20+rp*10;cx.shadowColor='rgba(120,40,255,.8)';
+      cx.strokeStyle=`rgba(180,100,255,${.7*rp})`;cx.lineWidth=3;
+      cx.beginPath();cx.moveTo(rx,ry-28*rp);cx.lineTo(rx,ry+28*rp);cx.stroke();
+      cx.strokeStyle=`rgba(220,160,255,${.4*rp})`;cx.lineWidth=1;
+      cx.beginPath();cx.moveTo(rx-18*rp,ry);cx.lineTo(rx+18*rp,ry);cx.stroke();
+      cx.restore();
+
+      if(G.talimarBound){
+        // Foot roots
+        cx.fillStyle='rgba(80,60,20,.7)';
+        cx.fillRect(wx-12,wy+33,8,18);cx.fillRect(wx+4,wy+33,8,18);
+      }
+    }
+
+    if(G.room==='void_sanctum'&&!G.won){
+      const mx=VP.x,my=VP.y-20;
+      cx.fillStyle='rgba(2,0,12,.96)';
+      cx.beginPath();cx.ellipse(mx,my-28,13,16,0,0,Math.PI*2);cx.fill();
+      cx.fillRect(mx-18,my-12,36,44);
+      // Incorporeal shimmer
+      if(!G.malachMaterial){
+        cx.save();cx.globalAlpha=.55;
+        const sg=cx.createLinearGradient(mx-18,my-12,mx+18,my+32);
+        sg.addColorStop(0,'rgba(40,10,80,.8)');sg.addColorStop(.5,'rgba(60,20,120,.3)');sg.addColorStop(1,'rgba(40,10,80,.8)');
+        cx.fillStyle=sg;cx.fillRect(mx-18,my-44,36,76);
+        cx.restore();
+      }
+      const p3=.5+Math.sin(animF*.08)*.5;
+      const eg3=cx.createRadialGradient(mx,my-30,0,mx,my-30,14);
+      eg3.addColorStop(0,`rgba(80,20,200,${p3})`);eg3.addColorStop(1,'rgba(20,0,80,0)');
+      cx.fillStyle=eg3;cx.beginPath();cx.arc(mx,my-30,14,0,Math.PI*2);cx.fill();
+    }
+  }
+
+  if(style==='crystal'){
+    // Crystal formations
+    cx.strokeStyle=`rgba(100,180,255,${.3*tf})`;cx.lineWidth=1.5;
+    [[fw.l+20,fw.b,15,50],[fw.l+40,fw.b,10,35],[fw.r-30,fw.b,12,45],[fw.r-15,fw.b,8,30],
+     [fw.l+(fw.r-fw.l)*.4,fw.t+8,6,25],[fw.l+(fw.r-fw.l)*.6,fw.t+5,5,20]].forEach(([x,y,w2,h2])=>{
+      cx.beginPath();cx.moveTo(x-w2/2,y);cx.lineTo(x,y-h2);cx.lineTo(x+w2/2,y);cx.closePath();cx.stroke();
+      cx.fillStyle=`rgba(100,180,255,${.08*tf})`;cx.fill();
+    });
+    // Glow on floor
+    const cg2=cx.createLinearGradient(0,fw.b,0,H);
+    cg2.addColorStop(0,`rgba(50,120,200,${.12*tf})`);cg2.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=cg2;cx.fillRect(0,fw.b,W,H-fw.b);
+  }
+
+  if(style==='spider'){
+    // Web strands
+    if(!G.webBurned){
+      cx.strokeStyle=`rgba(220,220,210,${.25*tf})`;cx.lineWidth=.8;
+      const wx2=fw.l+(fw.r-fw.l)*.55,wy2=fw.t;
+      for(let i=0;i<12;i++){
+        const angle=i*Math.PI/6;
+        cx.beginPath();cx.moveTo(wx2,wy2);
+        cx.lineTo(wx2+Math.cos(angle)*120,wy2+Math.sin(angle)*120);cx.stroke();
+      }
+      for(let r=20;r<120;r+=20){
+        cx.beginPath();cx.arc(wx2,wy2,r,0,Math.PI*2);cx.stroke();
+      }
+    }
+  }
+
+  if(style==='flooded'){
+    // Water floor
+    const wf=cx.createLinearGradient(0,fw.b*.9,0,H);
+    wf.addColorStop(0,'rgba(5,20,40,.4)');wf.addColorStop(1,'rgba(5,20,40,.8)');
+    cx.fillStyle=wf;cx.fillRect(0,fw.b*.9,W,H);
+    // Ripple
+    cx.strokeStyle=`rgba(80,120,180,${.2+Math.sin(animF*.04)*.1})`;cx.lineWidth=1;
+    cx.beginPath();cx.ellipse(VP.x,fw.b+20,60,8,0,0,Math.PI*2);cx.stroke();
+  }
+
+  if(style==='cave'){
+    // Stalactites
+    cx.fillStyle='rgba(40,35,28,.85)';
+    [.2,.35,.5,.65,.8].forEach(fx=>{
+      const sx=fw.l+(fw.r-fw.l)*fx,sh=15+Math.sin(fx*10)*8;
+      cx.beginPath();cx.moveTo(sx-6,fw.t);cx.lineTo(sx+6,fw.t);cx.lineTo(sx,fw.t+sh);cx.closePath();cx.fill();
+    });
+  }
+
+  cx.restore();
+}
+
+function drawSceneObjects(roomId){
+  const room=ROOMS()[roomId];
+  if(!room)return;
+  const hs=room.hs||{};
+  G.floatAnim=(G.floatAnim||0)+1;
+
+  cx.save();
+  cx.textAlign='center';cx.textBaseline='middle';
+  for(const [key,data] of Object.entries(hs)){
+    if(!data.icon)continue;
+    if(G.taken.has(G.room+'_'+key))continue;
+    const px=data.x*W,py=data.y*H;
+    const bob=Math.sin(G.floatAnim*.05+key.charCodeAt(0)*.7)*5;
+    const isH=hovered&&hovered.type==='hs'&&hovered.key===key;
+    const sz=isH?30:24;
+    // glow ring
+    const gr=cx.createRadialGradient(px,py+bob,0,px,py+bob,isH?26:18);
+    gr.addColorStop(0,`rgba(224,180,60,${isH?.45:.25})`);
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=gr;cx.beginPath();cx.arc(px,py+bob,isH?26:18,0,Math.PI*2);cx.fill();
+    cx.font=`${sz}px serif`;
+    cx.fillText(data.icon,px,py+bob);
+    if(isH){
+      cx.font='12px Cinzel,serif';cx.fillStyle='rgba(224,124,10,.9)';cx.textBaseline='bottom';
+      cx.fillText(data.label,px,py+bob-14);
+      cx.textBaseline='middle';
+    }
+  }
+  // Non-icon but notable hotspots: faint dot on hover
+  for(const [key,data] of Object.entries(hs)){
+    if(data.icon)continue;
+    const isH=hovered&&hovered.type==='hs'&&hovered.key===key;
+    if(isH){
+      const px=data.x*W,py=data.y*H;
+      const dr=cx.createRadialGradient(px,py,0,px,py,18);
+      dr.addColorStop(0,'rgba(224,124,10,.4)');dr.addColorStop(1,'rgba(0,0,0,0)');
+      cx.fillStyle=dr;cx.beginPath();cx.arc(px,py,18,0,Math.PI*2);cx.fill();
+      cx.font='11px Cinzel,serif';cx.fillStyle='rgba(224,124,10,.85)';cx.textBaseline='bottom';
+      cx.fillText(data.label,px,py-10);cx.textBaseline='middle';
+    }
+  }
+  cx.restore();
+}
+
+function drawFrame(){
+  if(!W||!G.room)return;
+  drawEnv(G.room);
+  drawSceneObjects(G.room);
+}
+
+function updateParticles(tx,ty){
+  if(animF%3===0&&G.torch>0)
+    particles.push({x:tx+(Math.random()-.5)*6,y:ty,vx:(Math.random()-.5)*.8,vy:-(1.5+Math.random()*1.5),life:1,decay:.018+Math.random()*.01,size:1.5+Math.random()*2,col:'ember'});
+  if(animF%50===0)
+    particles.push({x:Math.random()*W,y:Math.random()*(H*.5),vx:(Math.random()-.5)*.2,vy:.1+Math.random()*.2,life:1,decay:.003,size:.8,col:'dust'});
+  particles.forEach(p=>{p.x+=p.vx+Math.sin(animF*.08+p.x)*.1;p.y+=p.vy;p.life-=p.decay;});
+  particles=particles.filter(p=>p.life>0&&particles.length<120);
+}
+function drawParticles(tx,ty){
+  particles.forEach(p=>{
+    cx.save();cx.globalAlpha=p.life*.8;
+    if(p.col==='ember')cx.fillStyle=`hsl(${20+(1-p.life)*20},90%,${50+p.life*30}%)`;
+    else if(p.col==='void')cx.fillStyle='rgba(60,30,120,.7)';
+    else if(p.col==='lava')cx.fillStyle=`hsl(${10+p.life*20},90%,${40+p.life*20}%)`;
+    else cx.fillStyle='rgba(180,170,140,.4)';
+    cx.beginPath();cx.arc(p.x,p.y,p.size,0,Math.PI*2);cx.fill();
+    cx.restore();
+  });
+}
+
+// ═══════════════════════════════════════════════
+// INPUT + CONTEXT MENU
+// ═══════════════════════════════════════════════
+function getNX(e){const r=cv.getBoundingClientRect();return{nx:(e.clientX-r.left)/r.width,ny:(e.clientY-r.top)/r.height,cx:e.clientX-r.left,cy:e.clientY-r.top};}
+
+function hsAt(nx,ny){
+  const room=ROOMS()[G.room];if(!room)return null;
+  let best=null,bd=0.09;
+  for(const [k,d] of Object.entries(room.hs||{})){
+    const dx=nx-d.x,dy=ny-d.y,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<bd){bd=dist;best={key:k,data:d};}
+  }
+  return best;
+}
+
+function exitAt(nx,ny){
+  const room=ROOMS()[G.room];if(!room)return null;
+  const ex=room.exits||{};
+  if((ex.n||ex.u)&&ny<.45&&nx>.28&&nx<.72)return ex.u?'u':'n';
+  if(ex.w&&nx<.22)return 'w';
+  if(ex.e&&nx>.78)return 'e';
+  if(ex.s&&ny>.78)return 's';
+  if(ex.d&&ny<.2)return 'd';
+  return null;
+}
+
+cv.addEventListener('mousemove',e=>{
+  if(G.dead||G.won)return;
+  const {nx,ny}=getNX(e);
+  const hs=hsAt(nx,ny);
+  const ex=exitAt(nx,ny);
+  if(hs){hovered={type:'hs',key:hs.key,data:hs.data};cv.style.cursor='pointer';showHoverLabel(hs.data.label);}
+  else if(ex){hovered={type:'exit',dir:ex};cv.style.cursor='pointer';showHoverLabel('Go '+ex.toUpperCase());}
+  else{hovered=null;cv.style.cursor='crosshair';hideHoverLabel();}
+});
+cv.addEventListener('mouseleave',()=>{hovered=null;hideHoverLabel();});
+
+function showHoverLabel(t){const el=document.getElementById('hover-label');el.textContent=t;el.style.opacity='1';}
+function hideHoverLabel(){document.getElementById('hover-label').style.opacity='0';}
+
+cv.addEventListener('click',e=>{
+  if(G.dead||G.won)return;
+  closeCtx();
+  const {nx,ny,cx:px,cy:py}=getNX(e);
+  const ex=exitAt(nx,ny);
+  if(ex){goDir(ex);return;}
+  const hs=hsAt(nx,ny);
+  if(hs)showCtx(px,py,hs.key,hs.data);
+  else addLog("You examine your surroundings. The castle offers nothing new.");
+});
+
+function showCtx(px,py,key,data){
+  const menu=document.getElementById('ctx-menu');
+  menu.innerHTML='';
+  const acts=buildActs(key,data);
+  acts.forEach(a=>{
+    const el=document.createElement('div');
+    el.className='ctx-item';
+    el.innerHTML=`<span>${a.icon}</span><span>${a.label}</span>`;
+    el.onclick=()=>{closeCtx();a.fn();};
+    menu.appendChild(el);
+  });
+  // Position
+  const wrap=document.getElementById('view-wrap');
+  const mw=wrap.clientWidth,mh=wrap.clientHeight;
+  let lx=px+8,ly=py+8;
+  menu.style.display='block';
+  const mW=menu.offsetWidth,mH=menu.offsetHeight;
+  if(lx+mW>mw)lx=px-mW-4;
+  if(ly+mH>mh)ly=py-mH-4;
+  menu.style.left=lx+'px';menu.style.top=ly+'px';
+  setTimeout(()=>document.addEventListener('click',closeCtx,{once:true}),50);
+}
+function closeCtx(){const m=document.getElementById('ctx-menu');if(m)m.style.display='none';}
+
+function buildActs(key,data){
+  const acts=[];
+  acts.push({icon:'👁',label:'Look',fn:()=>addLog(`[${data.label}] ${data.look}`)});
+  if(data.take&&!G.taken.has(G.room+'_'+key)){
+    acts.push({icon:'🤲',label:`Take ${ITEMS[data.take]?.name||data.take}`,fn:()=>takeItem(key,data)});
+  }
+  if(isOpenable(key))acts.push({icon:'🚪',label:'Open',fn:()=>handleOpen(key,data)});
+  const usable=usableItems(key);
+  usable.forEach(itm=>{
+    acts.push({icon:'🔑',label:`Use ${ITEMS[itm].name}`,fn:()=>handleUse(itm,key,data)});
+  });
+  if(G.inv.includes('spellbook')&&isCastTarget(key)){
+    acts.push({icon:'✨',label:'Cast Spell',fn:()=>spellMenu(key,data)});
+  }
+  return acts;
+}
+
+function isOpenable(key){
+  if(G.room==='crypt'&&['s1','s2','s3','s4','s5','sb','hatch'].includes(key))return true;
+  if(G.room==='throne_room'&&key==='chest')return true;
+  if(G.room==='bone_mill'&&key==='cabinet')return true;
+  return false;
+}
+function isCastTarget(key){
+  return G.room==='warlock_chamber'||G.room==='void_sanctum';
+}
+function usableItems(key){
+  const u=[];
+  const r=G.room;
+  if(r==='chapel'&&['cl','cr','cc'].includes(key)){if(G.inv.includes('torch')||G.hasLantern||G.extraTorch>0)u.push('torch');}
+  if(r==='dragons_lair'&&key==='dragon'){if(G.inv.includes('dragons_bane'))u.push('dragons_bane');if(G.inv.includes('sword'))u.push('sword');}
+  if(r==='bridge'&&key==='troll'){if(G.inv.includes('coins'))u.push('coins');if(G.inv.includes('mirror'))u.push('mirror');}
+  if(r==='library'&&key==='mirror_h'){if(G.inv.includes('mirror'))u.push('mirror');}
+  if(r==='sanctum'&&key==='door_n'){if(G.inv.includes('gem'))u.push('gem');}
+  if(r==='crypt'&&key==='hatch'){if(G.inv.includes('skull_key'))u.push('skull_key');}
+  if(r==='throne_room'&&key==='chest'){if(G.inv.includes('ancient_key'))u.push('ancient_key');}
+  // EP2
+  if(r==='underground_river'&&key==='stalactite'){if(G.inv.includes('rope2'))u.push('rope2');}
+  if(r==='underground_river'&&key==='bucket_h'&&G.crossed)u.push('...');// just look, no use needed
+  if(r==='bone_mill'&&key==='mechanism'){if(G.inv.includes('gear'))u.push('gear');}
+  if(r==='bone_mill'&&key==='cabinet'){if(G.inv.includes('old_key'))u.push('old_key');}
+  if(r==='flooded_passage'&&key==='fire_debris'){if(G.inv.includes('bucket_w'))u.push('bucket_w');if(G.inv.includes('crystal_shard')&&G.fireOut)u.push('crystal_shard');}
+  if(r==='spider_chamber'&&key==='web'){if(G.extraTorch>0||G.torch>15)u.push('torch');}
+  if(r==='spider_chamber'&&key==='spider'&&G.webBurned){if(G.inv.includes('crystal_shard'))u.push('crystal_shard');}
+  if(r==='alchemy_lab'&&key==='retort'){if(G.inv.includes('bomb_parts'))u.push('bomb_parts');}
+  if(r==='menagerie'&&key==='raven_cage'){if(G.inv.includes('old_key'))u.push('old_key');}
+  if(r==='menagerie'&&key==='snake_cage'){if(G.inv.includes('crystal_shard'))u.push('crystal_shard');}
+  if(r==='void_sanctum'&&key==='malachar'){if(G.inv.includes('void_crystal'))u.push('void_crystal');if(G.inv.includes('alchemy_bomb')&&G.malachBound)u.push('alchemy_bomb');}
+  return u;
+}
+
+function checkKey(dir){
+  const room=ROOMS()[G.room];
+  const lock=(room.locked||{})[dir];
+  if(!lock)return true;
+  if(lock.key==='ancient_key')return G.inv.includes('ancient_key');
+  return false;
+}
+
+// ═══════════════════════════════════════════════
+// GAME LOGIC
+// ═══════════════════════════════════════════════
+function enterRoom(id){
+  G.room=id;G.turns++;G.visited.add(id);
+  const room=ROOMS()[id];
+  document.getElementById('room-name').textContent=room.name.toUpperCase();
+  addLog(room.desc);
+  // Special arrivals
+  if(id==='oracle_chamber'&&!G.oracleSolved)setTimeout(showRiddle,400);
+  if(id==='warlock_chamber'){
+    music.stop();music.play('boss');
+    addLog("⚑ You have the Spellbook. BIND him first — then DESTROY with the Crystal Vial. Do it fast.");
+    G.ritualActive=true;G.ritualTimer=55;
+    document.getElementById('ritual-bar').style.display='block';
+  }
+  if(id==='void_sanctum'){
+    music.stop();music.play('boss');
+    addLog("⚑ Malachar is incorporeal. Use VOID CRYSTAL on him first to materialize him. Then BIND. Then ALCHEMY BOMB.");
+    G.ritualActive=true;G.ritualTimer=65;
+    document.getElementById('ritual-bar').style.display='block';
+  }
+  if(id==='dragons_lair'&&!G.dragonDead)addLog("⚠ The dragon opens one eye. Evaluation in progress.");
+  if(id==='bone_passage'){
+    if(!G.inv.includes('rope')&&!G.cryptOpen)addLog("⚠ The passage down is a steep drop. You need a rope to descend safely.");
+  }
+  if(id==='void_antechamber'&&G.ravenFreed&&!G.taken.has('void_antechamber_void_crystal_h')){
+    addLog("The raven you freed is perched on a ledge. At its feet: something deep blue and humming.");
+  }
+  updateUI();
+}
+
+function goDir(dir){
+  const room=ROOMS()[G.room];
+  const ex=room.exits||{};
+  if(!ex[dir]){addLog("No passage that way.");return;}
+  const lock=(room.locked||{})[dir];
+  if(lock){
+    if(!checkKey(dir)){addLog(`⚫ ${lock.msg}`);return;}
+  }
+  // Special: crypt hatch needs key+rope
+  if(G.room==='crypt'&&dir==='d'){
+    if(!G.cryptOpen){addLog("The hatch is locked with a skull-shaped lock.");return;}
+    if(!G.inv.includes('rope')){addLog("The hatch opens — but the drop is ten feet of darkness. You need a rope.");return;}
+  }
+  sfx('step');fadeGo(()=>enterRoom(ex[dir]));
+}
+
+function takeItem(key,data){
+  const id=data.take;
+  const tKey=G.room+'_'+key;
+  if(G.taken.has(tKey)){addLog("Already taken.");return;}
+  G.taken.add(tKey);
+  if(id==='torch'){
+    const n=data.multi||1;
+    G.extraTorch+=n;
+    addLog(`⚑ ${n===1?'Torch':'Two torches'} collected. (${G.extraTorch} spare)`);
+  } else if(id==='lantern'){
+    G.hasLantern=true;G.inv.push('lantern');
+    addLog("⚑ Lantern collected. Burns slower than a torch.");
+  } else {
+    G.inv.push(id);
+    addLog(`⚑ ${ITEMS[id].name} added to inventory.`);
+  }
+  sfx('pickup');updateUI();
+}
+
+function handleOpen(key,data){
+  const r=G.room;
+  if(r==='crypt'){
+    if(key==='hatch'){
+      if(!G.inv.includes('skull_key')){addLog("The skull-shaped lock won't yield.");return;}
+      if(!G.inv.includes('rope')){addLog("You unlock the hatch — but the drop is ten feet of darkness. You need a rope.");return;}
+      addLog("You unlock the hatch with the Skull Key and lower the rope. The passage down is open.");
+      G.cryptOpen=true;ROOMS_1.crypt.exits.d='bone_passage';sfx('unlock');updateUI();return;
+    }
+    const safe=['s1','s3','s5'];const deadly=['s2','sb'];
+    if(deadly.includes(key)){die("A skeleton lunges from the sarcophagus with professional enthusiasm. The Crypt now contains one more occupant than it did. You are it.");return;}
+    if(key==='s4'){addLog("The sarcophagus slides open. The ancient key lies beside the bones. You have it already, or it's waiting.");return;}
+    addLog("The sarcophagus is empty. It smells like the past.");return;
+  }
+  if(r==='throne_room'&&key==='chest'){
+    if(!G.inv.includes('ancient_key')){addLog("The chest won't open. Old iron keyhole.");return;}
+    if(G.chestOpen){addLog("Open. You already have Dragon's Bane.");return;}
+    addLog("The Ancient Key fits. Inside: Dragon's Bane — an arrow tipped with void-iron.");
+    G.chestOpen=true;G.inv.push('dragons_bane');sfx('unlock');updateUI();return;
+  }
+  if(r==='bone_mill'&&key==='cabinet'){
+    if(!G.inv.includes('old_key')){addLog("The cabinet is locked. You have a key nearby — you should take it.");return;}
+    if(G.cabinetOpen){addLog("The cabinet is open. You already have the bomb components.");return;}
+    if(!G.millJammed){addLog("The cabinet is behind the running mechanism. Jam the mill first.");return;}
+    addLog("The key opens the cabinet. Inside: sulfur crystals and an iron flask. Bomb components.");
+    G.cabinetOpen=true;G.inv.push('bomb_parts');sfx('unlock');updateUI();return;
+  }
+  addLog("Nothing to open here, or it's already open.");
+}
+
+function handleUse(itemId,key,data){
+  const r=G.room;
+  // Chapel candles
+  if(r==='chapel'&&['cl','cr','cc'].includes(key)){
+    const seq=ROOMS_1.chapel.candle_seq;
+    if(key===seq[G.chapelProg]){
+      G.chapelProg++;
+      if(G.chapelProg<seq.length){addLog(`The candle lights. ${seq.length-G.chapelProg} more to go.`);}
+      else{
+        addLog("All three candles blaze. The altar compartment opens — a skull-shaped key inside.");
+        G.chapelDone=true;G.inv.push('skull_key');sfx('unlock');
+        addLog("⚑ Skull Key added. The east passage unlocks.");
+        ROOMS_1.chapel.exits.e='crypt';delete ROOMS_1.chapel.locked.e;
+        updateUI();
+      }
+    } else {
+      G.chapelProg=0;
+      addLog("Wrong order. The lit candles gutter out. A cold wind. Start again: first the failing, then the faithful, then the heart.");
+    }
+    return;
+  }
+  // Dragon
+  if(r==='dragons_lair'&&key==='dragon'){
+    if(itemId==='sword'&&!G.inv.includes('dragons_bane')){die("You charge the dragon with the iron sword. The dragon's opinion of the sword is low. Its opinion of you is lower. You are on fire. The sword is fine.");return;}
+    if(itemId==='dragons_bane'){
+      if(!G.inv.includes('sword')){die("Dragon's Bane is an arrow. You have no bow, so you throw it. The dragon is confused, then offended, then you are on fire.");return;}
+      addLog("You split the joint in the dragon's scale with Dragon's Bane, then drive the Iron Sword home. The dragon falls. The cavern goes quiet. You feel like a very tired hero.");
+      G.dragonDead=true;G.inv=G.inv.filter(i=>i!=='dragons_bane'&&i!=='sword');
+      ROOMS_1.dragons_lair.exits.n='bridge';delete ROOMS_1.dragons_lair.locked.n;
+      sfx('victory');addLog("⚑ The northern passage is clear.");updateUI();return;
+    }
+    if(itemId==='sword'){die("You charge the dragon with the iron sword. The dragon wakes fully. It evaluates you. The evaluation takes less than a second. You are on fire.");return;}
+  }
+  // Bridge troll
+  if(r==='bridge'&&key==='troll'){
+    const coins=G.inv.filter(i=>['coins','coin2','coin3'].includes(i)).length;
+    if(itemId==='mirror'&&coins>=2){
+      addLog("You hold the mirror up. The troll sees himself. There is a long silence. 'I'm...' He steps aside. You used only two coins. He's still staring as you pass.");
+      G.bridgePaid=true;G.inv=G.inv.filter(i=>i!=='coins'&&i!=='coin2');
+      ROOMS_1.bridge.exits.n='sanctum_approach';delete ROOMS_1.bridge.locked.n;
+      sfx('unlock');updateUI();return;
+    }
+    if(['coins','coin2','coin3'].includes(itemId)){
+      if(coins>=3){
+        addLog("You count out three coins. The troll takes them with enormous gravity. He steps aside. Pinned to the wall: 'I used to be a knight.' You believe him.");
+        G.bridgePaid=true;G.inv=G.inv.filter(i=>!['coins','coin2','coin3'].includes(i));
+        ROOMS_1.bridge.exits.n='sanctum_approach';delete ROOMS_1.bridge.locked.n;
+        sfx('unlock');updateUI();return;
+      }
+      addLog(`You have ${coins} coin${coins===1?'':'s'}. The troll needs three. He counts them. Counts again. Shakes his head slowly.`);return;
+    }
+  }
+  // Mirror in library
+  if(r==='library'&&key==='mirror_h'&&itemId==='mirror'){
+    addLog("You hold the mirror toward the east wall. Your reflection shows a door behind you. You turn. There it is — a hidden door, ajar. The mirror revealed it.");
+    G.mirrorUsed=true;ROOMS_1.library.exits.e='hidden_archives';sfx('unlock');updateUI();return;
+  }
+  // Gem on sanctum door
+  if(r==='sanctum'&&key==='door_n'&&itemId==='gem'){
+    addLog("The Gem pulses as you press it into the socket. The north door splits open silently. The Warlock Tower waits.");
+    G.inv=G.inv.filter(i=>i!=='gem');
+    ROOMS_1.sanctum.exits.n='warlock_tower';delete ROOMS_1.sanctum.locked.n;
+    sfx('unlock');updateUI();return;
+  }
+  // Crypt hatch with key+rope
+  if(r==='crypt'&&key==='hatch'&&itemId==='skull_key'){
+    handleOpen('hatch',data);return;
+  }
+  // Throne chest with ancient_key
+  if(r==='throne_room'&&key==='chest'&&itemId==='ancient_key'){
+    handleOpen('chest',data);return;
+  }
+
+  // ── EPISODE 2 ──
+  // Underground river: use rope2 on stalactite to swing across
+  if(r==='underground_river'&&key==='stalactite'&&itemId==='rope2'){
+    addLog("You tie the rope to the stalactite and swing across the underground river. You make it — barely. On the far bank: an empty bucket.");
+    G.crossed=true;ROOMS_2.underground_river.hs.bucket_h.take='bucket';
+    // Make bucket takeable now that they crossed
+    sfx('step');updateUI();return;
+  }
+  // Fill bucket at river (after crossing)
+  if(r==='underground_river'&&key==='bucket_h'&&G.inv.includes('bucket')){
+    addLog("You fill the bucket from the river. Heavy. Cold. Very wet.");
+    G.inv=G.inv.filter(i=>i!=='bucket');G.inv.push('bucket_w');sfx('pickup');updateUI();return;
+  }
+  // Bone mill: jam mechanism with gear
+  if(r==='bone_mill'&&key==='mechanism'&&itemId==='gear'){
+    addLog("You throw the gear into the mechanism. A grinding shriek. Then silence. The mill stops. The cabinet behind it is now accessible.");
+    G.millJammed=true;G.inv=G.inv.filter(i=>i!=='gear');sfx('unlock');updateUI();return;
+  }
+  // Bone mill: cabinet with old_key
+  if(r==='bone_mill'&&key==='cabinet'&&itemId==='old_key'){
+    handleOpen('cabinet',data);return;
+  }
+  // Flooded passage: water on fire
+  if(r==='flooded_passage'&&key==='fire_debris'&&itemId==='bucket_w'){
+    addLog("You hurl the bucket of river water onto the burning debris. The fire goes out with a furious hiss. The debris is now cold and moveable — but still blocking the path. You'll need something sharp to chip through the stone.");
+    G.fireOut=true;G.inv=G.inv.filter(i=>i!=='bucket_w');G.inv.push('bucket');sfx('unlock');updateUI();return;
+  }
+  if(r==='flooded_passage'&&key==='fire_debris'&&itemId==='crystal_shard'&&G.fireOut){
+    addLog("You use the crystal shard's razor edge to chip away at the fallen stone. It takes time. The passage north opens.");
+    ROOMS_2.flooded_passage.exits.n='spider_chamber';delete ROOMS_2.flooded_passage.locked.n;
+    sfx('unlock');updateUI();return;
+  }
+  if(r==='flooded_passage'&&key==='fire_debris'&&!G.fireOut&&itemId==='bucket'){
+    die("You attempt to throw the empty bucket at the fire. The bucket does not contain water. The fire notes this and continues existing. The debris doesn't care. You've wasted time and you're on fire now.");return;
+  }
+  // Spider chamber: burn web
+  if(r==='spider_chamber'&&key==='web'&&itemId==='torch'){
+    if(G.torch<15&&G.extraTorch===0){die("You touch your guttering torch to the web. The flame is barely alive. The web catches — but so does your sleeve. In the confusion, the spider makes a decision about you. It is not a good decision for you.");return;}
+    addLog("You touch the torch to the web. It burns fast — a crackling wall of fire. The spider shrieks and drops from the ceiling, enraged. Time to fight.");
+    G.webBurned=true;sfx('pickup');updateUI();return;
+  }
+  // Spider: fight with shard
+  if(r==='spider_chamber'&&key==='spider'&&G.webBurned&&itemId==='crystal_shard'){
+    addLog("The crystal shard is surgical. The fight is brief and unpleasant. The spider is dead. You are alive. The east passage is clear.");
+    G.spiderDead=true;ROOMS_2.spider_chamber.exits.e='alchemy_lab';sfx('victory');updateUI();return;
+  }
+  if(r==='spider_chamber'&&key==='spider'&&!G.webBurned){
+    die("You approach the spider before burning the web. The spider cocoons you with the efficiency of something that has done this thousands of times. You appreciate the professionalism. You appreciate very little else.");return;
+  }
+  // Alchemy Lab: combine bomb_parts in retort
+  if(r==='alchemy_lab'&&key==='retort'&&itemId==='bomb_parts'){
+    addLog("You combine the sulfur crystals and iron flask in the retort. A tense three minutes. A contained blue flash. The result: an Alchemy Bomb, stable until it isn't.");
+    G.inv=G.inv.filter(i=>i!=='bomb_parts');G.inv.push('alchemy_bomb');sfx('unlock');updateUI();return;
+  }
+  // Menagerie: raven with old_key
+  if(r==='menagerie'&&key==='raven_cage'&&itemId==='old_key'){
+    addLog("The old key fits. The cage opens. The raven steps out, looks at you for a long moment, then flies north through a crack in the ceiling. It took nothing. It left no note. Ravens are mysterious.");
+    G.ravenFreed=true;G.inv=G.inv.filter(i=>i!=='old_key');sfx('pickup');updateUI();return;
+  }
+  // Snake with crystal shard
+  if(r==='menagerie'&&key==='snake_cage'&&itemId==='crystal_shard'){
+    addLog("The shard picks the lock. The snake slips out, regards you with gold eyes, and disappears into a tunnel too small for you. A minute later it returns and deposits something at your feet: a fragment of void crystal, clearly retrieved from somewhere deep. Then it vanishes.");
+    G.snakeFreed=true;
+    // Add void crystal to void_antechamber
+    sfx('pickup');updateUI();return;
+  }
+  // Void sanctum: use void_crystal to materialize Malachar
+  if(r==='void_sanctum'&&key==='malachar'&&itemId==='void_crystal'){
+    addLog("You hurl the void crystal at Malachar. It strikes him mid-drift and collapses. He solidifies with a sound like shattering glass and a look of genuine surprise. 'Oh,' he says. 'That was clever.' He is now material. He is not happy about it.");
+    G.malachMaterial=true;G.inv=G.inv.filter(i=>i!=='void_crystal');sfx('unlock');updateUI();return;
+  }
+  if(r==='void_sanctum'&&key==='malachar'&&itemId==='alchemy_bomb'&&G.malachBound){
+    addLog("You throw the Alchemy Bomb. It contacts Malachar at point-blank range — anchored by the BIND, destroyed by the bomb. The explosion is contained, precise, and complete.");
+    setTimeout(()=>winGame2(),1800);return;
+  }
+  if(r==='void_sanctum'&&key==='malachar'&&itemId==='alchemy_bomb'&&!G.malachBound){
+    die("You throw the Alchemy Bomb at Malachar before binding him. He sidesteps. The bomb lands behind you. The Alchemy Bomb goes off behind you. Malachar says: 'oh, interesting.' Then he is alone. Then: quiet.");return;
+  }
+  if(r==='void_sanctum'&&key==='malachar'&&!G.malachMaterial){
+    die("You touch Malachar without the Void Crystal. Your hand passes through him, but he reaches back with fingers that exist in more dimensions than yours. He grabs your arm with both hands and pulls. You learn, briefly, that there are more dimensions than three.");return;
+  }
+  // Generic bucket
+  if(itemId==='bucket'||itemId==='bucket_w'){
+    addLog("You throw the bucket. It lands with a hollow clang. There is a long silence. Whatever watched you considers its life choices. You do the same.");return;
+  }
+  addLog(`Using ${ITEMS[itemId]?.name||itemId} there doesn't seem to accomplish anything right now.`);
+}
+
+function spellMenu(key,data){
+  const wrap=document.getElementById('view-wrap');
+  document.getElementById('spell-modal')?.remove();
+  const m=document.createElement('div');
+  m.id='spell-modal';
+  m.style.cssText='position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);background:#08080F;border:1px solid #3A3048;padding:14px 20px;z-index:50;min-width:180px;font-family:Cinzel,serif;';
+  m.innerHTML='<div style="color:#E07C0A;font-size:.72rem;letter-spacing:.15em;margin-bottom:10px;">CAST SPELL</div>';
+  ['OPEN','BIND','SUMMON','DESTROY'].forEach(sp=>{
+    const b=document.createElement('div');
+    b.className='ctx-item';b.innerHTML=`<span>✦</span><span>${sp}</span>`;
+    b.onclick=()=>{m.remove();castSpell(sp,key,data);};
+    m.appendChild(b);
+  });
+  const c=document.createElement('div');
+  c.className='ctx-item';c.style.color='#7A7060';c.textContent='cancel';
+  c.onclick=()=>m.remove();m.appendChild(c);
+  wrap.appendChild(m);
+}
+
+function castSpell(sp,key,data){
+  const r=G.room;
+  if(r==='warlock_chamber'){
+    if(sp==='SUMMON'){die("You cast SUMMON. Something answers. It is not helpful. The Spellbook's warning was specific. You ignored it.");return;}
+    if(sp==='DESTROY'&&!G.talimarBound){die("You cast DESTROY without binding Talimar first. He absorbs it. 'Really?' he says, with genuine offense. He wasn't worried about DESTROY. He's worried about BIND first. You have demonstrated you didn't know that.");return;}
+    if(sp==='BIND'&&G.talimarBound){addLog("Talimar is already bound — feet rooted to the floor. Now use DESTROY with the Crystal Vial. Do it NOW.");return;}
+    if(sp==='BIND'){addLog("BIND! Talimar lurches — his feet root to the floor. He strains against it. His eyes burn. 'You—' The binding holds. For now.");G.talimarBound=true;return;}
+    if(sp==='DESTROY'&&G.talimarBound){
+      if(!G.inv.includes('crystal_vial')){addLog("DESTROY crackles — but without the Crystal Vial as anchor it disperses. The binding is weakening. You need the Vial.");return;}
+      addLog("You hurl the Crystal Vial and cast DESTROY. The binding holds Talimar in place as the spell tears through him. A flash of white void-light. Talimar screams in a language you don't know. The rift collapses with a sound like a thousand doors slamming.");
+      setTimeout(()=>winGame1(),1800);return;
+    }
+  }
+  if(r==='void_sanctum'){
+    if(sp==='BIND'&&!G.malachMaterial){die("You cast BIND at an incorporeal entity. The spell passes through him and binds a wall. The wall is now rooted. Malachar is not. He has watched this with detached curiosity.");return;}
+    if(sp==='BIND'&&G.malachMaterial&&G.malachBound){addLog("Malachar is already bound. Use the Alchemy Bomb.");return;}
+    if(sp==='BIND'&&G.malachMaterial){addLog("BIND! Malachar's feet root to the void-stone. He wrenches at the binding. '...Not bad,' he admits. The surprise in his voice is real. Use the Alchemy Bomb NOW.");G.malachBound=true;return;}
+    if(sp==='DESTROY'&&!G.malachBound){die("You cast DESTROY. Malachar sidesteps, then looks at you. 'You were supposed to bind me first.' He sounds almost disappointed. Then he is not concerned with being disappointed anymore.");return;}
+    if(sp==='SUMMON'){die("You cast SUMMON in the Void Sanctum. Oh. Oh no. Whatever lives in the void beyond Malachar's gate answers instead. Even Malachar takes a step back. That is the last thing you observe.");return;}
+  }
+  if(sp==='SUMMON'){die("You cast SUMMON. Something answers immediately. It has been waiting. It is not what you expected. You are gone before you process what it was.");return;}
+  if(sp==='OPEN')addLog("OPEN crackles out. Nothing nearby has the decency to unlock itself.");
+  else if(sp==='BIND')addLog("BIND thickens the air briefly. There is nothing here worth binding. The spell dissipates.");
+  else if(sp==='DESTROY')addLog("DESTROY requires an anchor target. Without one it implodes. Mildly unpleasant. Nothing destroyed.");
+}
+
+function showRiddle(){
+  if(G.oracleSolved)return;
+  document.getElementById('riddle-m')?.remove();
+  const wrap=document.getElementById('view-wrap');
+  const m=document.createElement('div');
+  m.id='riddle-m';
+  m.style.cssText='position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);background:#08080F;border:1px solid #3A3048;padding:16px 22px;z-index:50;min-width:280px;font-family:Cinzel,serif;';
+  m.innerHTML=`<div style="color:#E07C0A;font-size:.7rem;letter-spacing:.15em;margin-bottom:8px">THE ORACLE'S RIDDLE</div>
+<div style="font-family:'IM Fell English',serif;font-style:italic;color:#CFC4A6;font-size:.8rem;line-height:1.7;margin-bottom:10px">"I have cities, but no houses.<br>I have forests, but no trees.<br>I have water, but no fish.<br>What am I?"</div>
+<input id="riddle-in" type="text" placeholder="your answer…" style="width:100%;padding:5px 8px;background:#04040C;border:1px solid #3A3048;color:#CFC4A6;font-family:Cinzel,serif;font-size:.72rem;outline:none">
+<button onclick="checkRiddle()" style="display:block;width:100%;margin-top:7px;padding:6px;background:transparent;border:1px solid #3A3048;color:#CFC4A6;font-family:Cinzel,serif;font-size:.68rem;cursor:pointer;letter-spacing:.08em">ANSWER</button>`;
+  wrap.appendChild(m);
+  setTimeout(()=>document.getElementById('riddle-in')?.focus(),100);
+}
+function checkRiddle(){
+  const ans=(document.getElementById('riddle-in')?.value||'').toLowerCase().trim();
+  document.getElementById('riddle-m')?.remove();
+  if(['map','a map','maps'].includes(ans)){
+    addLog('"A map," you say. The Oracle is still. Then: "Yes. Take the stone. The passage opens." She does not smile. But something changes.');
+    G.oracleSolved=true;ROOMS_1.oracle_chamber.exits.n='serpent_hall';delete ROOMS_1.oracle_chamber.locked.n;
+    G.taken.add('oracle_chamber_stone_h');G.inv.push('oracle_stone');sfx('unlock');
+    addLog("⚑ Oracle's Stone added. North passage unlocked.");updateUI();
+  } else {
+    addLog(`"${ans||'silence'}," you offer. The Oracle says: "No." The passage remains sealed.`);
+    setTimeout(showRiddle,1200);
+  }
+}
+
+function die(msg){
+  G.dead=true;
+  const m=msg||(G.ep===2?DEATHS2:DEATHS)[Math.floor(Math.random()*(G.ep===2?DEATHS2:DEATHS).length)];
+  addLog(`☠ ${m}`,'dead');
+  document.getElementById('death-msg').textContent=m;
+  document.getElementById('ritual-bar').style.display='none';
+  music.stop();
+  sfx('death');
+  setTimeout(()=>document.getElementById('death-screen').classList.add('show'),600);
+}
+
+function winGame1(){
+  G.ritualActive=false;G.ritualTimer=0;
+  document.getElementById('ritual-bar').style.display='none';
+  music.stop();
+  addLog("The castle shudders. The rift collapses. Then — silence. Real silence, for the first time in centuries.","good");
+  addLog("You walk toward the exit. The floor shudders. A crack opens. Then widens. You fall.","good");
+  setTimeout(()=>{
+    const banner=document.getElementById('ep-banner');
+    banner.classList.add('show');
+    document.getElementById('ep-stat').style.display='flex';
+    document.getElementById('ep-num').textContent='II';
+    setTimeout(()=>{
+      banner.classList.remove('show');
+      // Start Episode 2
+      G.ep=2;G.room='the_pit';
+      G.ritualActive=false;
+      // Keep spellbook, lose everything else
+      const keep=['spellbook'];
+      G.inv=G.inv.filter(i=>keep.includes(i));
+      if(G.extraTorch>0)G.extraTorch=1;
+      G.visited.clear();
+      music.stop();music.play('dungeon');
+      enterRoom('the_pit');
+    },3500);
+  },2500);
+}
+
+function winGame2(){
+  G.ritualActive=false;G.ritualTimer=0;
+  document.getElementById('ritual-bar').style.display='none';
+  G.won=true;music.stop();sfx('victory');
+  const msg="The Alchemy Bomb tears Malachar apart — not into pieces, but into nothing. The void gate collapses. The Underdark goes dark.\n\nYou find a passage upward, through the collapsed stone. It takes a long time.\n\nYou emerge above ground as dawn breaks over what used to be Castle Shadowgate. The castle is still. The crow from the gatehouse is still there.\n\nIt looks at you.\n\nYou look at it.\n\nYou both know this isn't over.\n\nBut today: it is.";
+  document.getElementById('win-msg').textContent=msg;
+  setTimeout(()=>document.getElementById('win-screen').classList.add('show'),800);
+}
+
+function fadeGo(cb){
+  const o=document.createElement('div');
+  o.style.cssText='position:absolute;inset:0;background:#000;opacity:0;transition:opacity .3s;z-index:9;pointer-events:none;';
+  document.getElementById('view-wrap').appendChild(o);
+  requestAnimationFrame(()=>o.style.opacity='1');
+  setTimeout(()=>{cb();o.style.opacity='0';setTimeout(()=>o.remove(),320);},320);
+}
+
+// ═══════════════════════════════════════════════
+// TORCH
+// ═══════════════════════════════════════════════
+function burnTorch(dt){
+  if(G.dead||G.won)return;
+  const rate=G.hasLantern?.09:.21;
+  G.torch=Math.max(0,G.torch-rate*dt);
+  if(G.torch<20&&G.torch>18)addLog("⚠ Your torch gutters. The darkness notices.","warn");
+  if(G.torch<=0){
+    if(G.extraTorch>0){G.extraTorch--;G.torch=100;addLog("Your torch dies. You light another. This one is also finite.");}
+    else die("Your torch goes out. In the absolute dark of this place, something that was waiting for exactly this moment finds you. It was patient. It was right to be.");
+  }
+  // Ritual timer
+  if(G.ritualActive&&G.ritualTimer>0){
+    G.ritualTimer-=dt;
+    const pct=Math.max(0,G.ritualTimer/(G.room==='warlock_chamber'?55:65))*100;
+    document.getElementById('ritual-fill').style.width=pct+'%';
+    document.getElementById('ritual-fill').style.background=pct<30?'#8B1A1A':pct<60?'#A05010':'#6B1515';
+    if(G.ritualTimer<=15&&G.ritualTimer>13)addLog("⚠ The ritual is nearly complete. Do it NOW.","dead");
+    if(G.ritualTimer<=0){die(G.room==='warlock_chamber'?"Talimar completes the ritual. The rift tears fully open. Whatever comes through is not interested in your presence, except briefly and terminally.":"Malachar breaks the binding with a final surge. The gate opens fully. The void answers. You are not invited.");return;}
+  }
+  updateTorchUI();
+}
+function updateTorchUI(){
+  document.getElementById('torch-pct').textContent=Math.ceil(G.torch)+'%';
+  document.getElementById('torch-ct').textContent=G.extraTorch;
+  const ic=document.getElementById('torch-icon');
+  ic.textContent=G.torch<20?'🕯️':G.torch<50?'🔦':'🔥';
+}
+
+// ═══════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════
+function updateUI(){
+  const inv=document.getElementById('inventory');
+  inv.innerHTML='';
+  G.inv.forEach(id=>{
+    const it=ITEMS[id];if(!it)return;
+    const s=document.createElement('div');
+    s.className='inv-slot'+(G.sel===id?' sel':'');
+    s.innerHTML=`<div class="inv-icon">${it.icon}</div><div class="inv-label">${it.name}</div>`;
+    s.title=it.desc;
+    s.onclick=()=>{G.sel=G.sel===id?null:id;updateUI();if(G.sel)addLog(`[Selected: ${it.name}] Click something in the scene to use it.`,'sys');};
+    inv.appendChild(s);
+  });
+  for(let i=0;i<G.extraTorch;i++){
+    const s=document.createElement('div');s.className='inv-slot';
+    s.innerHTML='<div class="inv-icon">🕯️</div><div class="inv-label">Torch</div>';inv.appendChild(s);
+  }
+  document.getElementById('turn-ct').textContent=G.turns;
+  updateTorchUI();
+  drawMinimap();
+}
+
+function drawMinimap(){
+  const mc=document.getElementById('minimap');
+  const mctx=mc.getContext('2d');
+  const CW=194,CH=150;
+  mc.width=CW;mc.height=CH;
+  mctx.fillStyle='#06060F';mctx.fillRect(0,0,CW,CH);
+  const CELL=18,OX=8,OY=6;
+  // Draw connections
+  mctx.strokeStyle='rgba(58,48,72,.7)';mctx.lineWidth=1;
+  MAP_LINKS.forEach(([a,b])=>{
+    const pa=MAP_POS[a],pb=MAP_POS[b];
+    if(!pa||!pb)return;
+    mctx.beginPath();
+    mctx.moveTo(OX+pa[0]*CELL+4,OY+pa[1]*CELL+4);
+    mctx.lineTo(OX+pb[0]*CELL+4,OY+pb[1]*CELL+4);
+    mctx.stroke();
+  });
+  // Draw rooms
+  Object.entries(MAP_POS).forEach(([id,[col,row]])=>{
+    const x=OX+col*CELL,y=OY+row*CELL;
+    const vis=G.visited.has(id);
+    const cur=G.room===id;
+    if(!vis){
+      mctx.fillStyle='rgba(30,28,45,.5)';
+      mctx.fillRect(x,y,8,8);
+      return;
+    }
+    mctx.fillStyle=cur?'#E07C0A':G.ep===2&&MAP_POS[id]&&MAP_POS[id][0]<=2?'#602080':'#2A4060';
+    mctx.fillRect(x,y,8,8);
+    if(cur){mctx.strokeStyle='rgba(224,124,10,.7)';mctx.lineWidth=1;mctx.strokeRect(x-1,y-1,10,10);}
+  });
+  // Labels: episode separators
+  mctx.fillStyle='rgba(122,112,96,.5)';mctx.font='7px Cinzel,serif';
+  mctx.fillText('I',8,144);mctx.fillText('II',8,CH-3);
+}
+
+function addLog(text,cls){
+  const wrap=document.getElementById('log-wrap');
+  const p=document.createElement('p');
+  if(cls)p.className=cls;
+  p.textContent=text;
+  wrap.appendChild(p);
+  while(wrap.children.length>80)wrap.removeChild(wrap.firstChild);
+  wrap.scrollTop=wrap.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════
+// SFX
+// ═══════════════════════════════════════════════
+function sfx(type){
+  try{
+    const ac=getAC();
+    const mg=ac.createGain();mg.gain.value=.22;mg.connect(ac.destination);
+    const t=ac.currentTime;
+    if(type==='step'){
+      const b=ac.createBuffer(1,2048,ac.sampleRate);
+      const d=b.getChannelData(0);
+      for(let i=0;i<2048;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/2048,2)*.4;
+      const s=ac.createBufferSource();s.buffer=b;
+      const f=ac.createBiquadFilter();f.type='highpass';f.frequency.value=300;
+      s.connect(f);f.connect(mg);s.start();
+    } else if(type==='pickup'){
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type='sine';o.frequency.setValueAtTime(880,t);o.frequency.exponentialRampToValueAtTime(1320,t+.1);
+      g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);
+      o.connect(g);g.connect(mg);o.start();o.stop(t+.25);
+    } else if(type==='unlock'){
+      [440,660,880].forEach((f2,i)=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.type='triangle';o.frequency.value=f2;
+        g.gain.setValueAtTime(.2,t+i*.1);g.gain.exponentialRampToValueAtTime(.001,t+i*.1+.2);
+        o.connect(g);g.connect(mg);o.start(t+i*.1);o.stop(t+i*.1+.2);
+      });
+    } else if(type==='death'){
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type='sawtooth';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(55,t+1.3);
+      g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+1.5);
+      o.connect(g);g.connect(mg);o.start();o.stop(t+1.5);
+    } else if(type==='victory'){
+      [523,659,784,1047].forEach((f2,i)=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.type='triangle';o.frequency.value=f2;
+        g.gain.setValueAtTime(.15,t+i*.12);g.gain.exponentialRampToValueAtTime(.001,t+i*.12+.6);
+        o.connect(g);g.connect(mg);o.start(t+i*.12);o.stop(t+i*.12+.6);
+      });
+    }
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════
+// MAIN LOOP
+// ═══════════════════════════════════════════════
+function loop(ts){
+  requestAnimationFrame(loop);
+  const dt=Math.min((ts-lastT)/1000,.05);lastT=ts;
+  animF++;
+  if(!G.dead&&!G.won){
+    tfT=.85+Math.sin(animF*.07)*.08+Math.sin(animF*.13)*.04;
+    tf+=(tfT-tf)*.08;
+    tf*=(.6+G.torch/100*.4);
+    tf=Math.max(.3,Math.min(1,tf));
+    burnTorch(dt);
+    const tx=W?VP.x+Math.sin(animF*.04)*8:400;
+    const ty=FW?FW.t-H*.09:100;
+    updateParticles(tx,ty);
+  }
+  drawFrame();
+}
+
+document.getElementById('restart-btn').onclick=startGame;
+
+function startGame(){
+  resize();
+  newGame();
+  addLog("The torch is lit. The gate is open. The castle is waiting.",'sys');
+  addLog("Click items in the scene to interact. Click the dark archways to move.",'sys');
+}
+
+let started=false;
+document.addEventListener('click',()=>{if(!started){started=true;startGame();}},{once:true});
+resize();
+requestAnimationFrame(ts=>{
+  lastT=ts;
+  G={room:'gatehouse',ep:1,inv:[],sel:null,torch:100,extraTorch:0,hasLantern:false,turns:0,dead:false,won:false,taken:new Set(),visited:new Set(),chapelProg:0,chapelDone:false,cryptOpen:false,oracleSolved:false,dragonDead:false,bridgePaid:false,mirrorUsed:false,chestOpen:false,talimarBound:false,ritualTimer:0,ritualActive:false,millJammed:false,cabinetOpen:false,fireOut:false,webBurned:false,spiderDead:false,ravenFreed:false,snakeFreed:false,malachBound:false,malachMaterial:false,floatAnim:0,crossed:false};
+  document.getElementById('room-name').textContent='THE GATEHOUSE';
+  loop(ts);
+});
+</script>
+
