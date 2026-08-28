@@ -106,29 +106,29 @@ const N={
   A2:110,B2:123.47,C3:130.81,D3:146.83,E3:164.81,F3:174.61,G3:196,A3:220,B3:246.94,
   C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392,A4:440,Bb3:233.08,Bb4:466.16,R:0
 };
-const Q=420,H=840,W=1680,E=210;
+const DQ=420,DH=840,DW=1680,DE=210;
 
 // Approximation of ominous dungeon theme in Am
 const DUNGEON_MEL=[
-  [N.E4,Q],[N.D4,E],[N.C4,E],[N.B3,Q],[N.A3,H],
-  [N.R,E],[N.C4,Q],[N.D4,E],[N.E4,E],[N.F4,Q],[N.E4,H],
-  [N.R,E],[N.G3,Q],[N.A3,E],[N.B3,E],[N.C4,Q],[N.D4,H],
-  [N.R,E],[N.B3,Q],[N.A3,Q],[N.G3,Q],[N.A3,H+Q],
-  [N.R,Q],[N.A3,E],[N.G3,E],[N.F3,E],[N.E3,E],[N.D3,Q],[N.E3,H],
-  [N.F3,Q],[N.G3,E],[N.A3,E],[N.B3,Q],[N.A3,H],
-  [N.G3,Q],[N.F3,Q],[N.E3,Q],[N.A3,W],
+  [N.E4,DQ],[N.D4,DE],[N.C4,DE],[N.B3,DQ],[N.A3,DH],
+  [N.R,DE],[N.C4,DQ],[N.D4,DE],[N.E4,DE],[N.F4,DQ],[N.E4,DH],
+  [N.R,DE],[N.G3,DQ],[N.A3,DE],[N.B3,DE],[N.C4,DQ],[N.D4,DH],
+  [N.R,DE],[N.B3,DQ],[N.A3,DQ],[N.G3,DQ],[N.A3,DH+DQ],
+  [N.R,DQ],[N.A3,DE],[N.G3,DE],[N.F3,DE],[N.E3,DE],[N.D3,DQ],[N.E3,DH],
+  [N.F3,DQ],[N.G3,DE],[N.A3,DE],[N.B3,DQ],[N.A3,DH],
+  [N.G3,DQ],[N.F3,DQ],[N.E3,DQ],[N.A3,DW],
 ];
 const DUNGEON_BASS=[
-  [N.A2,H],[N.R,Q],[N.E3,Q],[N.A2,H],[N.R,Q],[N.G3,Q],
-  [N.C3,H],[N.R,Q],[N.G3,Q],[N.A2,H],[N.R,Q],[N.A2,Q],
-  [N.F3,H],[N.R,Q],[N.E3,Q],[N.G3,H],[N.R,Q],[N.D3,Q],
-  [N.A2,W+H],
+  [N.A2,DH],[N.R,DQ],[N.E3,DQ],[N.A2,DH],[N.R,DQ],[N.G3,DQ],
+  [N.C3,DH],[N.R,DQ],[N.G3,DQ],[N.A2,DH],[N.R,DQ],[N.A2,DQ],
+  [N.F3,DH],[N.R,DQ],[N.E3,DQ],[N.G3,DH],[N.R,DQ],[N.D3,DQ],
+  [N.A2,DW+DH],
 ];
 const BOSS_MEL=[
-  [N.A3,E],[N.R,E],[N.A3,E],[N.Bb3,E],[N.A3,E],[N.G3,Q],
-  [N.F3,E],[N.R,E],[N.F3,E],[N.G3,E],[N.F3,E],[N.E3,Q],
-  [N.D3,E],[N.E3,E],[N.F3,E],[N.G3,E],[N.A3,Q],[N.R,Q],
-  [N.B3,E],[N.A3,E],[N.G3,E],[N.F3,E],[N.E3,H],[N.R,H],
+  [N.A3,DE],[N.R,DE],[N.A3,DE],[N.Bb3,DE],[N.A3,DE],[N.G3,DQ],
+  [N.F3,DE],[N.R,DE],[N.F3,DE],[N.G3,DE],[N.F3,DE],[N.E3,DQ],
+  [N.D3,DE],[N.E3,DE],[N.F3,DE],[N.G3,DE],[N.A3,DQ],[N.R,DQ],
+  [N.B3,DE],[N.A3,DE],[N.G3,DE],[N.F3,DE],[N.E3,DH],[N.R,DH],
 ];
 
 class ChipPlayer{
@@ -807,7 +807,7 @@ function drawRoomDetails(room,fw,st,tf){
     // falling void particles
     if(Math.random()<.15)particles.push({x:fw.l+Math.random()*(fw.r-fw.l)*1.4,y:fw.t,vx:(Math.random()-.5)*.3,vy:1+Math.random()*2,life:1,decay:.008,size:.8+Math.random(),col:'void'});
     // infinite void sides
-    [['left',0,fw.l*.9],[' right',fw.r*1.1,W]].forEach(([,x1,x2])=>{
+    [['left',0,fw.l*.9],[' right',fw.r*1.1,DW]].forEach(([,x1,x2])=>{
       const vg2=cx.createLinearGradient(x1===0?W*.15:x1,0,x1===0?0:W,0);
       vg2.addColorStop(0,'rgba(0,0,15,.97)');vg2.addColorStop(1,'rgba(0,0,10,0)');
       cx.fillStyle=vg2;cx.fillRect(Math.min(x1,x2),fw.t,Math.abs(x2-x1),fw.b-fw.t);
